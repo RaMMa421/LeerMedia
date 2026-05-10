@@ -1,0 +1,2916 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Im Krankenhaus Spiel</title>
+<style>
+/* =============================================
+   DESIGN SYSTEM – Health theme: green/blue/white
+   Font: Nunito (friendly, rounded)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+:root {
+  --green-dark:   #2d7d5a;
+  --green-mid:    #3fa87a;
+  --green-light:  #b6e8d3;
+  --green-pale:   #e8f7f1;
+  --blue-dark:    #1e5f8e;
+  --blue-mid:     #2e86c1;
+  --blue-light:   #aed6f1;
+  --blue-pale:    #eaf4fb;
+  --off-white:    #f5fbf8;
+  --text-dark:    #1a2e24;
+  --text-light:   #6a9a80;
+  --accent-red:   #e05a5a;
+  --accent-orange:#e8813a;
+  --shadow-card:  0 8px 32px rgba(45,125,90,0.15);
+  --radius-lg:    20px;
+  --radius-md:    12px;
+  --radius-sm:    8px;
+  --radius-pill:  999px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--off-white);
+  color: var(--text-dark);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* =============================================
+   SCENE SYSTEM
+   ============================================= */
+.scene { display: none; animation: fadeIn 0.4s ease; min-height: 100vh; }
+.scene.active { display: flex; flex-direction: column; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+@keyframes popIn {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(63,168,122,0.4); }
+  50%      { box-shadow: 0 0 0 8px rgba(63,168,122,0); }
+}
+
+/* =============================================
+   PROGRESS BAR
+   ============================================= */
+.progress-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 24px 0;
+  flex-wrap: wrap;
+}
+.progress-step {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 700; color: var(--text-light);
+}
+.progress-step .step-dot {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--green-light); color: var(--text-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 900;
+  transition: all 0.3s ease; border: 3px solid transparent;
+}
+.progress-step.done .step-dot   { background: var(--green-mid);  color: white; }
+.progress-step.active .step-dot { background: var(--green-dark); color: white; border-color: var(--green-light); animation: pulse 2s infinite; }
+.progress-line { width: 40px; height: 3px; background: var(--green-light); border-radius: 2px; transition: background 0.3s; }
+.progress-line.done { background: var(--green-mid); }
+
+/* =============================================
+   LAYOUT HELPERS
+   ============================================= */
+.scene-inner {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; padding: 20px 16px 32px;
+  max-width: 820px; margin: 0 auto; width: 100%;
+}
+.scene-title   { font-size: 1.5rem; font-weight: 900; color: var(--green-dark); text-align: center; margin-bottom: 4px; }
+.scene-subtitle{ font-size: 0.9rem; color: var(--text-light); text-align: center; margin-bottom: 16px; font-weight: 600; }
+
+.card {
+  background: white; border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card); padding: 20px; width: 100%;
+}
+
+/* =============================================
+   BUTTONS
+   ============================================= */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px 22px; border-radius: var(--radius-pill);
+  font-family: 'Nunito', sans-serif; font-size: 0.95rem; font-weight: 800;
+  cursor: pointer; border: none; transition: all 0.2s ease; user-select: none;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary   { background: var(--green-dark); color: white; box-shadow: 0 4px 12px rgba(45,125,90,0.3); }
+.btn-primary:hover   { background: var(--green-mid); transform: translateY(-1px); }
+.btn-secondary { background: var(--blue-mid); color: white; box-shadow: 0 4px 12px rgba(30,95,142,0.25); }
+.btn-secondary:hover { background: var(--blue-dark); transform: translateY(-1px); }
+.btn-outline   { background: transparent; color: var(--green-dark); border: 2.5px solid var(--green-dark); }
+.btn-outline:hover { background: var(--green-pale); }
+.btn-sm { padding: 8px 14px; font-size: 0.82rem; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+/* =============================================
+   FEEDBACK
+   ============================================= */
+.feedback {
+  margin-top: 10px; padding: 11px 18px;
+  border-radius: var(--radius-md); font-weight: 700;
+  font-size: 0.95rem; text-align: center; animation: fadeIn 0.3s ease;
+}
+.feedback.success { background: var(--green-pale); color: var(--green-dark); border: 2px solid var(--green-light); }
+.feedback.error   { background: #fff0f0; color: var(--accent-red);  border: 2px solid #ffd5d5; }
+.feedback.info    { background: var(--blue-pale);  color: var(--blue-dark);  border: 2px solid var(--blue-light); }
+.hidden { display: none !important; }
+
+/* =============================================
+   TITLE SCREEN
+   ============================================= */
+#scene-title { background: linear-gradient(160deg, var(--green-dark) 0%, var(--blue-dark) 100%); }
+.title-hero {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 24px; text-align: center; color: white;
+}
+.title-icon { font-size: 72px; margin-bottom: 16px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2)); animation: float 3s ease-in-out infinite; }
+.title-app-name { font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 900; margin-bottom: 8px; text-shadow: 0 2px 12px rgba(0,0,0,0.2); }
+.title-tagline  { font-size: 1rem; opacity: 0.85; margin-bottom: 28px; font-weight: 600; max-width: 380px; line-height: 1.5; }
+.title-features { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 36px; }
+.feature-chip { background: rgba(255,255,255,0.18); backdrop-filter: blur(8px); border: 1.5px solid rgba(255,255,255,0.3); border-radius: var(--radius-pill); padding: 7px 14px; font-size: 0.85rem; font-weight: 700; color: white; }
+.btn-start { background: white; color: var(--green-dark); font-size: 1.05rem; padding: 14px 36px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+.btn-start:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,0.25); }
+
+/* =============================================
+   GRID / CODING SCENES
+   ============================================= */
+.coding-layout {
+  display: grid;
+  grid-template-columns: 1fr 210px;
+  gap: 14px;
+  width: 100%;
+}
+@media (max-width: 620px) { .coding-layout { grid-template-columns: 1fr; } }
+
+.grid-container {
+  background: white; border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card); padding: 14px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+
+/* Timer display in grid scenes */
+.timer-display {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--blue-pale); border: 2px solid var(--blue-light);
+  border-radius: var(--radius-pill); padding: 6px 16px;
+  font-weight: 800; font-size: 0.95rem; color: var(--blue-dark);
+}
+.timer-display .timer-icon { font-size: 1rem; }
+
+/* Direction compass */
+.compass {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--green-pale); border: 2px solid var(--green-light);
+  border-radius: var(--radius-pill); padding: 6px 14px;
+  font-weight: 800; font-size: 0.9rem; color: var(--green-dark);
+}
+
+.grid-canvas {
+  display: grid; gap: 3px;
+  background: var(--green-pale);
+  border-radius: var(--radius-md); padding: 6px;
+  border: 2px solid var(--green-light);
+}
+.cell {
+  width: 64px; height: 64px; border-radius: 10px;
+  background: white; display: flex; align-items: center; justify-content: center;
+  font-size: 26px; border: 1.5px solid rgba(63,168,122,0.15);
+  transition: background 0.2s; position: relative;
+}
+.cell.path-visited { background: rgba(63,168,122,0.1); }
+.cell.obstacle     { background: #fff7f0; border-color: rgba(232,129,58,0.3); }
+.cell.goal-cell    { background: var(--green-pale); border-color: var(--green-light); }
+.cell.start-cell   { background: var(--blue-pale);  border-color: var(--blue-light); }
+
+/* Character token – large, directional */
+.character {
+  width: 54px; height: 54px; border-radius: 50%;
+  background: var(--green-dark);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  box-shadow: 0 2px 10px rgba(45,125,90,0.45);
+  transition: all 0.32s ease;
+  position: absolute; z-index: 2;
+  border: 3px solid white;
+}
+
+/* Command panel */
+.command-panel { display: flex; flex-direction: column; gap: 10px; }
+.command-panel .card { padding: 14px; }
+.panel-label {
+  font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-light); margin-bottom: 7px;
+}
+.cmd-block {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; border-radius: var(--radius-md);
+  font-weight: 700; font-size: 0.88rem; cursor: pointer;
+  border: none; transition: all 0.15s; width: 100%;
+  font-family: 'Nunito', sans-serif;
+}
+.cmd-block:hover { transform: translateX(3px); }
+.cmd-block.forward   { background: #e8f4fb; color: var(--blue-dark); border: 2px solid var(--blue-light); }
+.cmd-block.turnleft  { background: #fff4e8; color: #b35a00;           border: 2px solid #ffd5a0; }
+.cmd-block.turnright { background: #f0e8ff; color: #5a00b3;           border: 2px solid #d5a0ff; }
+
+.sequence-list {
+  min-height: 70px; background: var(--off-white);
+  border-radius: var(--radius-md); border: 2px dashed var(--green-light);
+  padding: 7px; display: flex; flex-wrap: wrap; gap: 5px; align-content: flex-start;
+  max-height: 150px; overflow-y: auto;
+}
+.seq-item {
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 9px; border-radius: var(--radius-sm);
+  font-size: 0.78rem; font-weight: 700; animation: popIn 0.2s ease;
+}
+.seq-item.forward   { background: #e8f4fb; color: var(--blue-dark); }
+.seq-item.turnleft  { background: #fff4e8; color: #b35a00; }
+.seq-item.turnright { background: #f0e8ff; color: #5a00b3; }
+
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+
+/* =============================================
+   DIALOGUE SCENES (2 & 4) – ANIMATED CLINIC
+   ============================================= */
+
+/* ── Shared animation keyframes ── */
+@keyframes blink {
+  0%,90%,100% { transform: scaleY(1); }
+  95%          { transform: scaleY(0.08); }
+}
+@keyframes talkBounce {
+  0%,100% { transform: translateY(0) rotate(0deg); }
+  25%     { transform: translateY(-3px) rotate(-1deg); }
+  75%     { transform: translateY(-1px) rotate(1deg); }
+}
+@keyframes idleFloat {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-5px); }
+}
+@keyframes headHold {
+  0%,100% { transform: rotate(-4deg) translateY(0); }
+  50%     { transform: rotate(-8deg) translateY(-3px); }
+}
+@keyframes stomachHold {
+  0%,100% { transform: translateX(0) rotate(0deg); }
+  30%     { transform: translateX(-3px) rotate(-2deg); }
+  70%     { transform: translateX(2px) rotate(1deg); }
+}
+@keyframes feverSway {
+  0%,100% { transform: rotate(0deg); }
+  25%     { transform: rotate(-3deg); }
+  75%     { transform: rotate(3deg); }
+}
+@keyframes sweatDrop {
+  0%   { opacity:0; transform: translateY(-4px) translateX(0); }
+  30%  { opacity:1; }
+  100% { opacity:0; transform: translateY(12px) translateX(2px); }
+}
+@keyframes coughShake {
+  0%,100% { transform: translateX(0) rotate(0deg); }
+  20%     { transform: translateX(-4px) rotate(-3deg); }
+  40%     { transform: translateX(4px) rotate(3deg); }
+  60%     { transform: translateX(-3px) rotate(-2deg); }
+  80%     { transform: translateX(3px) rotate(2deg); }
+}
+@keyframes bubblePop {
+  0%   { opacity:0; transform: scale(0.6) translateY(8px); }
+  60%  { transform: scale(1.06) translateY(-2px); }
+  100% { opacity:1; transform: scale(1) translateY(0); }
+}
+@keyframes speakerGlow {
+  0%,100% { filter: drop-shadow(0 0 0px rgba(63,168,122,0)); }
+  50%     { filter: drop-shadow(0 0 12px rgba(63,168,122,0.6)); }
+}
+@keyframes deskShimmer {
+  0%,100% { opacity:0.7; }
+  50%     { opacity:1; }
+}
+@keyframes cloudDrift {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(20px); }
+}
+
+/* ──────────────────────────────────────────────
+   SCENE 2 – RECEPTION ROOM
+   ────────────────────────────────────────────── */
+
+/* Full scene wrapper – soft clinic gradient */
+.reception-scene {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* The illustrated room */
+.clinic-room {
+  width: 100%;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #d6eeff 0%, #eaf7f1 60%, #c8e6d4 100%);
+  border: 2px solid rgba(63,168,122,0.2);
+  box-shadow: 0 12px 40px rgba(45,125,90,0.18);
+  position: relative;
+  overflow: hidden;
+  min-height: 240px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  padding: 0 20px;
+}
+
+/* Background wall decoration – window */
+.room-window {
+  position: absolute;
+  top: 14px; left: 50%;
+  transform: translateX(-50%);
+  width: 80px; height: 56px;
+  background: linear-gradient(160deg, #b8e0ff 0%, #daf0ff 100%);
+  border: 3px solid #8ec8f0;
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+}
+.room-window::before {
+  content: '';
+  position: absolute;
+  top: 6px; left: 50%;
+  transform: translateX(-50%);
+  width: 2px; height: 100%;
+  background: #8ec8f0;
+}
+.room-window::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 0;
+  width: 100%; height: 2px;
+  background: #8ec8f0;
+}
+/* Sun in window */
+.room-sun {
+  position: absolute;
+  top: 18px; right: 22px;
+  width: 22px; height: 22px;
+  background: #ffd95e;
+  border-radius: 50%;
+  box-shadow: 0 0 12px 4px rgba(255,210,80,0.4);
+  animation: deskShimmer 3s ease-in-out infinite;
+}
+
+/* Floor */
+.room-floor {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 48px;
+  background: linear-gradient(180deg, #c8e6d4 0%, #a8d4be 100%);
+  border-top: 3px solid rgba(63,168,122,0.3);
+}
+/* Floor tiles */
+.room-floor::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255,255,255,0.25) 0, rgba(255,255,255,0.25) 1px,
+    transparent 1px, transparent 48px
+  );
+}
+
+/* Wall cross decoration */
+.wall-cross {
+  position: absolute;
+  top: 18px; right: 20px;
+  font-size: 28px;
+  opacity: 0.3;
+}
+
+/* Reception desk – pseudo-3D */
+.reception-desk {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 48px;
+}
+.desk-top {
+  width: 150px; height: 24px;
+  background: linear-gradient(180deg, #f0c070 0%, #d4a050 100%);
+  border-radius: 8px 8px 0 0;
+  border: 2px solid #b88030;
+  box-shadow: 0 -3px 10px rgba(0,0,0,0.1);
+  position: relative;
+}
+/* computer on desk */
+.desk-top::after {
+  content: '🖥️';
+  position: absolute;
+  top: -20px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 20px;
+}
+.desk-front {
+  width: 140px; height: 36px;
+  background: linear-gradient(180deg, #d4a050 0%, #b88030 100%);
+  border-radius: 0 0 6px 6px;
+  border: 2px solid #a07020;
+  border-top: none;
+}
+/* decorative sign on desk */
+.desk-sign {
+  position: absolute;
+  bottom: -20px; left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 2px solid #b6e8d3;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: var(--green-dark);
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+/* Characters in room */
+.room-character {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 48px;
+}
+/* SVG character figure */
+.char-svg {
+  width: 72px;
+  height: auto;
+  transition: filter 0.4s ease;
+  cursor: default;
+}
+.char-svg.speaking {
+  animation: talkBounce 0.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px rgba(63,168,122,0.6));
+}
+.char-svg.idle {
+  animation: idleFloat 3s ease-in-out infinite;
+}
+
+/* Name tag under character */
+.char-name-tag {
+  margin-top: 4px;
+  background: white;
+  border: 2px solid var(--green-light);
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--green-dark);
+  letter-spacing: 0.04em;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+/* Animated speech bubble in room */
+.room-bubble {
+  position: absolute;
+  top: -64px;
+  background: white;
+  border: 2.5px solid var(--green-mid);
+  border-radius: 16px 16px 16px 4px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  max-width: 160px;
+  box-shadow: 0 4px 16px rgba(45,125,90,0.15);
+  animation: bubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+  z-index: 10;
+  white-space: normal;
+  line-height: 1.4;
+}
+.room-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -10px; left: 14px;
+  width: 14px; height: 10px;
+  background: white;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  border-left: 2.5px solid var(--green-mid);
+  border-bottom: 2.5px solid var(--green-mid);
+}
+.room-bubble.right-side {
+  left: auto; right: 0;
+  border-radius: 16px 16px 4px 16px;
+}
+.room-bubble.right-side::after {
+  left: auto; right: 14px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+  border-left: none;
+  border-right: 2.5px solid var(--green-mid);
+}
+
+/* ── Choice buttons below the room ── */
+.choice-panel {
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 18px 20px;
+  width: 100%;
+}
+.choice-label {
+  font-size: 0.72rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-light); margin-bottom: 10px;
+}
+.choice-group { display: flex; flex-direction: column; gap: 9px; }
+.choice-btn {
+  background: white; border: 2.5px solid var(--green-light);
+  border-radius: var(--radius-md); padding: 13px 18px; text-align: left;
+  cursor: pointer; font-family: 'Nunito', sans-serif;
+  font-size: 0.97rem; font-weight: 700; color: var(--text-dark); transition: all 0.2s;
+  display: flex; align-items: center; gap: 10px;
+}
+.choice-btn::before { content: '💬'; font-size: 1.1rem; flex-shrink: 0; }
+.choice-btn:hover  { background: var(--green-pale); border-color: var(--green-mid); transform: translateX(5px); box-shadow: 0 4px 14px rgba(45,125,90,0.15); }
+.choice-btn.selected { background: var(--green-pale); border-color: var(--green-dark); color: var(--green-dark); }
+.choice-btn:disabled { opacity: 0.55; cursor: default; transform: none !important; }
+
+/* Feedback row in scene 2 */
+.scene2-feedback-row {
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ──────────────────────────────────────────────
+   SCENE 4 – DOCTOR'S ROOM
+   ────────────────────────────────────────────── */
+.doctor-scene {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Illustrated doctor room – warmer tone */
+.doctor-room {
+  width: 100%;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #dff0ff 0%, #f0f8ee 55%, #c6e0cc 100%);
+  border: 2px solid rgba(46,134,193,0.2);
+  box-shadow: 0 12px 40px rgba(30,95,142,0.18);
+  position: relative;
+  overflow: hidden;
+  min-height: 220px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  padding: 0 16px;
+}
+
+/* Doctor room window */
+.dr-window {
+  position: absolute;
+  top: 12px; right: 24px;
+  width: 64px; height: 50px;
+  background: linear-gradient(160deg, #c0ddff 0%, #dff0ff 100%);
+  border: 3px solid #90bce0;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+.dr-window::before {
+  content:'';
+  position:absolute; top:6px; left:50%;
+  transform:translateX(-50%);
+  width:2px; height:100%; background:#90bce0;
+}
+.dr-window::after {
+  content:'';
+  position:absolute; top:50%; left:0;
+  width:100%; height:2px; background:#90bce0;
+}
+
+/* Medical poster */
+.dr-poster {
+  position: absolute;
+  top: 12px; left: 20px;
+  width: 52px; height: 64px;
+  background: white;
+  border: 2px solid #b6e8d3;
+  border-radius: 6px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 2px; font-size: 18px;
+}
+.dr-poster-label {
+  font-size: 0.45rem; font-weight: 800;
+  color: var(--green-dark); text-transform: uppercase;
+  letter-spacing: 0.04em; text-align: center;
+}
+
+/* Doctor room floor */
+.dr-floor {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 44px;
+  background: linear-gradient(180deg, #c6e0cc 0%, #a8ccb4 100%);
+  border-top: 3px solid rgba(63,168,122,0.25);
+}
+.dr-floor::before {
+  content:'';
+  position:absolute; inset:0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255,255,255,0.2) 0, rgba(255,255,255,0.2) 1px,
+    transparent 1px, transparent 44px
+  );
+}
+
+/* Exam table */
+.exam-table {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 44px;
+}
+.exam-table-top {
+  width: 110px; height: 18px;
+  background: linear-gradient(180deg, #e8e0d8 0%, #ccc0b0 100%);
+  border-radius: 8px 8px 0 0;
+  border: 2px solid #b0a090;
+  position: relative;
+}
+/* pillow on exam table */
+.exam-table-top::after {
+  content: '';
+  position: absolute;
+  top: -10px; right: 12px;
+  width: 36px; height: 14px;
+  background: white;
+  border: 2px solid #d0c8c0;
+  border-radius: 6px;
+}
+.exam-table-leg {
+  width: 90px; height: 30px;
+  background: linear-gradient(180deg, #ccc0b0 0%, #b0a090 100%);
+  border-radius: 0 0 6px 6px;
+  border: 2px solid #b0a090; border-top: none;
+}
+
+/* Doctor character – professional */
+.dr-char {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 44px;
+}
+/* Patient character */
+.pt-char {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 44px;
+}
+
+/* Illness-specific patient animation classes */
+.pt-svg.anim-kopf   { animation: headHold   1.8s ease-in-out infinite; }
+.pt-svg.anim-bauch  { animation: stomachHold 1.6s ease-in-out infinite; }
+.pt-svg.anim-fieber { animation: feverSway   1.2s ease-in-out infinite; }
+.pt-svg.anim-husten { animation: coughShake  1.0s ease-in-out infinite; }
+.pt-svg.idle        { animation: idleFloat   3s ease-in-out infinite; }
+
+/* Sweat drops for fever */
+.sweat-drop {
+  position: absolute;
+  top: 10px; right: -4px;
+  width: 6px; height: 10px;
+  background: #88ccee;
+  border-radius: 50% 50% 50% 0;
+  animation: sweatDrop 1.4s ease-in-out infinite;
+}
+.sweat-drop:nth-child(2) {
+  top: 22px; right: -8px;
+  animation-delay: 0.5s;
+}
+
+/* Doctor room bubble – blue tint */
+.dr-bubble {
+  position: absolute;
+  top: -64px;
+  background: white;
+  border: 2.5px solid var(--blue-mid);
+  border-radius: 16px 16px 16px 4px;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  max-width: 170px;
+  box-shadow: 0 4px 16px rgba(30,95,142,0.15);
+  animation: bubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+  z-index: 10;
+  line-height: 1.4;
+  white-space: normal;
+}
+.dr-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -10px; left: 14px;
+  width: 14px; height: 10px;
+  background: white;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  border-left: 2.5px solid var(--blue-mid);
+  border-bottom: 2.5px solid var(--blue-mid);
+}
+.dr-bubble.pt-bubble {
+  border-color: var(--green-mid);
+  border-radius: 16px 16px 4px 16px;
+  left: auto; right: 0;
+}
+.dr-bubble.pt-bubble::after {
+  left: auto; right: 14px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+  border-left: none;
+  border-right: 2.5px solid var(--green-mid);
+  border-bottom-color: var(--green-mid);
+}
+
+/* illness badge above doctor room */
+.illness-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: linear-gradient(135deg, #fff4e8, #ffe0c8);
+  border: 2px solid #f0c080;
+  border-radius: var(--radius-pill);
+  padding: 6px 16px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #8b4800;
+  margin-bottom: 6px;
+  box-shadow: 0 2px 10px rgba(240,160,80,0.2);
+  animation: popIn 0.4s ease both;
+}
+
+/* ── Reorder panel (scene 4) ── */
+.reorder-panel {
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 18px 20px;
+  width: 100%;
+}
+
+/* =============================================
+   SCENE 4 – ANIMATED DIALOGUE PLAYBACK SYSTEM
+   Shown ONLY after correct reorder submission.
+   Overlays the reorder panel with a cinematic
+   conversation that auto-plays line by line.
+   ============================================= */
+
+/* ── Slide-in from bottom animation ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(32px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Typewriter text reveal ── */
+@keyframes typeReveal {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0% 0 0); }
+}
+
+/* ── Speaker spotlight pulse ── */
+@keyframes spotlightPulse {
+  0%,100% { transform: scale(1);    filter: brightness(1); }
+  50%     { transform: scale(1.07); filter: brightness(1.12) drop-shadow(0 0 14px rgba(63,168,122,0.5)); }
+}
+
+/* ── Spotlight for doctor ── */
+@keyframes spotlightDoctor {
+  0%,100% { transform: scale(1);    filter: brightness(1); }
+  50%     { transform: scale(1.07); filter: brightness(1.15) drop-shadow(0 0 14px rgba(46,134,193,0.55)); }
+}
+
+/* ── Fade out for inactive speaker ── */
+@keyframes dimChar {
+  from { opacity: 1; }
+  to   { opacity: 0.42; }
+}
+
+/* Full playback overlay container */
+.playback-overlay {
+  width: 100%;
+  display: none;                    /* shown by JS when correct */
+  flex-direction: column;
+  gap: 14px;
+  animation: slideUp 0.5s ease both;
+}
+.playback-overlay.active { display: flex; }
+
+/* ── Playback room: same doctor-room style ── */
+.playback-room {
+  width: 100%;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #dff0ff 0%, #f0f8ee 55%, #c6e0cc 100%);
+  border: 2.5px solid rgba(46,134,193,0.25);
+  box-shadow: 0 12px 40px rgba(30,95,142,0.2);
+  position: relative;
+  overflow: hidden;
+  min-height: 240px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  padding: 0 20px;
+}
+
+/* cinematic top bar – shows current speaker label */
+.pb-topbar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 32px;
+  background: rgba(30,50,40,0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  z-index: 20;
+}
+.pb-speaker-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: white;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+/* progress dots */
+.pb-progress-dots {
+  display: flex;
+  gap: 4px;
+  position: absolute;
+  right: 12px;
+}
+.pb-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  transition: background 0.3s;
+}
+.pb-dot.active { background: #7ee8b0; }
+.pb-dot.done   { background: rgba(255,255,255,0.55); }
+
+/* Room background layers inside playback-room */
+.pb-floor {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 44px;
+  background: linear-gradient(180deg, #c6e0cc 0%, #a8ccb4 100%);
+  border-top: 3px solid rgba(63,168,122,0.25);
+}
+.pb-floor::before {
+  content:'';
+  position:absolute; inset:0;
+  background-image: repeating-linear-gradient(
+    90deg, rgba(255,255,255,0.2) 0, rgba(255,255,255,0.2) 1px,
+    transparent 1px, transparent 44px
+  );
+}
+.pb-window {
+  position: absolute;
+  top: 40px; right: 20px;
+  width: 58px; height: 44px;
+  background: linear-gradient(160deg, #c0ddff 0%, #dff0ff 100%);
+  border: 3px solid #90bce0; border-radius: 8px 8px 0 0; overflow: hidden;
+}
+.pb-window::before {
+  content:''; position:absolute; top:5px; left:50%; transform:translateX(-50%);
+  width:2px; height:100%; background:#90bce0;
+}
+.pb-window::after {
+  content:''; position:absolute; top:50%; left:0;
+  width:100%; height:2px; background:#90bce0;
+}
+.pb-poster {
+  position: absolute; top: 40px; left: 16px;
+  width: 46px; height: 56px;
+  background: white; border: 2px solid #b6e8d3; border-radius: 5px;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 2px; font-size: 16px;
+}
+.pb-poster span { font-size: 0.4rem; font-weight:800; color:var(--green-dark); text-align:center; }
+
+/* Character wrappers in playback room */
+.pb-char {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 44px;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+/* spotlight on speaking char */
+.pb-char.pb-speaking .char-svg {
+  animation: spotlightPulse 0.55s ease-in-out infinite;
+}
+.pb-char.pb-speaking-doctor .char-svg {
+  animation: spotlightDoctor 0.55s ease-in-out infinite;
+}
+/* dim the inactive char */
+.pb-char.pb-dimmed { opacity: 0.38; }
+
+/* ── Cinematic speech bubble (playback) ── */
+.pb-bubble {
+  position: absolute;
+  top: -82px;
+  background: white;
+  border-radius: 18px 18px 18px 5px;
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  max-width: 190px;
+  line-height: 1.45;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.13);
+  z-index: 15;
+  white-space: normal;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  border: 3px solid var(--blue-mid);
+}
+.pb-bubble.visible {
+  opacity: 1;
+  animation: bubblePop 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+/* tail */
+.pb-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -11px; left: 16px;
+  width: 14px; height: 11px;
+  background: white;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  border-left: 3px solid var(--blue-mid);
+  border-bottom: 3px solid var(--blue-mid);
+}
+/* patient bubble – right-side, green */
+.pb-bubble.pb-pt-bubble {
+  border-color: var(--green-mid);
+  border-radius: 18px 18px 5px 18px;
+  left: auto; right: -8px;
+}
+.pb-bubble.pb-pt-bubble::after {
+  left: auto; right: 16px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+  border-left: none;
+  border-right: 3px solid var(--green-mid);
+  border-bottom-color: var(--green-mid);
+}
+
+/* Exam table in playback room */
+.pb-table {
+  position: relative; z-index: 3;
+  display: flex; flex-direction: column; align-items: center;
+  margin-bottom: 36px;
+}
+.pb-table-top {
+  width: 100px; height: 16px;
+  background: linear-gradient(180deg, #e8e0d8 0%, #ccc0b0 100%);
+  border-radius: 8px 8px 0 0; border: 2px solid #b0a090; position: relative;
+}
+.pb-table-top::after {
+  content: '';
+  position: absolute; top: -9px; right: 10px;
+  width: 32px; height: 12px;
+  background: white; border: 2px solid #d0c8c0; border-radius: 5px;
+}
+.pb-table-leg {
+  width: 80px; height: 28px;
+  background: linear-gradient(180deg, #ccc0b0 0%, #b0a090 100%);
+  border-radius: 0 0 5px 5px; border: 2px solid #b0a090; border-top: none;
+}
+
+/* ── Line-by-line transcript below the room ── */
+.pb-transcript {
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 16px 20px;
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pb-transcript-title {
+  font-size: 0.68rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-light); margin-bottom: 4px;
+}
+.pb-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 700;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.pb-line.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+.pb-line.pb-line-arzt {
+  background: var(--blue-pale);
+  color: var(--blue-dark);
+  border-left: 3px solid var(--blue-mid);
+}
+.pb-line.pb-line-patient {
+  background: var(--green-pale);
+  color: var(--green-dark);
+  border-left: 3px solid var(--green-mid);
+  margin-left: 12px;
+}
+.pb-line-speaker {
+  font-size: 0.68rem; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  opacity: 0.65; flex-shrink: 0;
+}
+.pb-line-text { flex: 1; }
+
+/* ── Success banner shown at end of playback ── */
+.pb-success-banner {
+  background: linear-gradient(135deg, var(--green-dark), var(--blue-dark));
+  color: white;
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  text-align: center;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  animation: slideUp 0.5s ease both;
+  box-shadow: 0 8px 32px rgba(45,90,120,0.3);
+}
+.pb-success-banner.active { display: flex; }
+.pb-success-emoji { font-size: 2.4rem; }
+.pb-success-title { font-size: 1.4rem; font-weight: 900; }
+.pb-success-sub   { font-size: 0.9rem; opacity: 0.85; font-weight: 600; }
+
+/* Vocab strip */
+.vocab-strip { background: var(--blue-pale); border: 2px solid var(--blue-light); border-radius: var(--radius-md); padding: 9px 14px; width: 100%; }
+.vocab-title { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; color: var(--blue-dark); margin-bottom: 5px; }
+.vocab-items { display: flex; flex-wrap: wrap; gap: 5px; }
+.vocab-pill  { background: white; border: 1.5px solid var(--blue-light); border-radius: var(--radius-pill); padding: 3px 9px; font-size: 0.78rem; font-weight: 700; color: var(--blue-dark); }
+
+/* =============================================
+   SCENE 4: REORDER BLOCKS
+   ============================================= */
+.reorder-area { display: flex; flex-direction: column; gap: 7px; min-height: 60px; }
+.reorder-block {
+  background: white; border: 2.5px solid var(--green-light);
+  border-radius: var(--radius-md); padding: 12px 16px;
+  cursor: grab; font-weight: 700; font-size: 0.95rem;
+  display: flex; align-items: center; gap: 10px;
+  user-select: none; transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+.reorder-block:hover     { border-color: var(--green-mid); transform: translateX(2px); }
+.reorder-block.dragging  { opacity: 0.35; cursor: grabbing; }
+.reorder-block.drag-over { border-color: var(--green-dark); background: var(--green-pale); }
+.reorder-block.correct   { border-color: var(--green-mid); background: var(--green-pale); }
+.reorder-block.wrong     { border-color: var(--accent-red); background: #fff0f0; }
+.drag-handle { font-size: 1rem; opacity: 0.35; flex-shrink: 0; }
+.block-num   { width: 24px; height: 24px; border-radius: 50%; background: var(--green-light); color: var(--green-dark); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 900; flex-shrink: 0; }
+.block-speaker-badge { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-light); margin-bottom: 2px; }
+
+/* =============================================
+   FINAL SCREEN
+   ============================================= */
+#scene-final { background: linear-gradient(160deg, #1e5f8e 0%, #2d7d5a 100%); }
+.final-inner { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; color: white; }
+.final-trophy  { font-size: 80px; margin-bottom: 20px; animation: float 2.5s ease-in-out infinite; }
+.final-title   { font-size: clamp(1.8rem, 5vw, 2.8rem); font-weight: 900; margin-bottom: 8px; }
+.final-subtitle{ font-size: 1rem; opacity: 0.85; font-weight: 600; margin-bottom: 28px; max-width: 400px; line-height: 1.5; }
+.result-grid   { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 32px; }
+.result-card   { background: rgba(255,255,255,0.15); backdrop-filter: blur(8px); border: 1.5px solid rgba(255,255,255,0.3); border-radius: var(--radius-lg); padding: 18px 24px; text-align: center; min-width: 130px; }
+.result-val    { font-size: 2rem; font-weight: 900; display: block; }
+.result-label  { font-size: 0.8rem; opacity: 0.8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; display: block; }
+.btn-restart   { background: white; color: var(--green-dark); padding: 14px 32px; font-size: 1rem; box-shadow: 0 8px 28px rgba(0,0,0,0.2); }
+.btn-restart:hover { transform: translateY(-2px); }
+
+/* Grid legend */
+.grid-legend {
+  display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+  font-size: 0.8rem; font-weight: 700; color: var(--text-light);
+}
+.grid-legend span { display: flex; align-items: center; gap: 4px; }
+
+/* misc */
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.full-width { width: 100%; }
+.flex-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<!-- =============================================
+     SZENE 0: TITELBILDSCHIRM
+     ============================================= -->
+<section id="scene-title" class="scene active">
+  <div class="title-hero">
+    <div class="title-icon">🏥</div>
+    <h1 class="title-app-name">Im Krankenhaus</h1>
+    <p class="title-tagline">Lerne Deutsch im Krankenhaus – mit Coding-Logik und echten Dialogen!</p>
+    <div class="title-features">
+      <span class="feature-chip">🧩 Coding-Logik</span>
+      <span class="feature-chip">🇩🇪 Nur Deutsch</span>
+      <span class="feature-chip">🎲 Zufällige Karte</span>
+      <span class="feature-chip">⏱ Zeitmessung</span>
+    </div>
+    <button class="btn btn-start" onclick="startApp()">Jetzt starten →</button>
+  </div>
+</section>
+
+<!-- =============================================
+     SZENE 1: CODING-WEG ZUR REZEPTION
+     ============================================= -->
+<section id="scene-1" class="scene">
+  <div class="progress-bar" id="progress-1"></div>
+  <div class="scene-inner">
+    <h2 class="scene-title">🗺️ Weg zur Rezeption</h2>
+    <p class="scene-subtitle">Programmiere den Weg! Benutze Befehle, um die Rezeption zu erreichen.</p>
+
+    <div class="coding-layout">
+      <!-- LEFT: Karte & Status -->
+      <div class="grid-container">
+        <!-- Timer + Richtungsanzeige -->
+        <div class="flex-row" style="justify-content:space-between;width:100%;">
+          <div class="timer-display">
+            <span class="timer-icon">⏱</span>
+            <span>Zeit: <strong id="timer1-display">0s</strong></span>
+          </div>
+          <div class="compass">
+            <span>Richtung:</span>
+            <strong id="dir1-display">➡️</strong>
+          </div>
+        </div>
+        <div id="grid1" class="grid-canvas"></div>
+        <!-- Legende: erklärt die Symbole auf der Karte -->
+        <div class="grid-legend">
+          <span>🚩 Start</span>
+          <span>🏥 Ziel</span>
+          <span>🌿🧑 Hindernis</span>
+        </div>
+        <div id="feedback-1" class="feedback hidden"></div>
+        <div class="btn-row">
+          <button class="btn btn-secondary btn-sm" id="run-btn-1" onclick="runCommands(1)">▶ Ausführen</button>
+          <button class="btn btn-outline btn-sm" onclick="resetScene(1)">↺ Zurücksetzen</button>
+        </div>
+      </div>
+
+      <!-- RIGHT: Befehlspanel -->
+      <div class="command-panel">
+        <div class="card">
+          <div class="panel-label">📦 Befehlsblöcke</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <button class="cmd-block forward"   onclick="addCommand(1,'forward')">⬆ Vorwärts gehen</button>
+            <button class="cmd-block turnleft"  onclick="addCommand(1,'left')">↰ Links drehen</button>
+            <button class="cmd-block turnright" onclick="addCommand(1,'right')">↱ Rechts drehen</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="panel-label">📋 Mein Programm</div>
+          <div id="seq-1" class="sequence-list"></div>
+          <button class="btn btn-outline btn-sm mt-8 full-width" onclick="clearCommands(1)">✕ Liste leeren</button>
+        </div>
+        <div class="vocab-strip">
+          <div class="vocab-title">💬 Wörter</div>
+          <div class="vocab-items">
+            <span class="vocab-pill">Rezeption</span>
+            <span class="vocab-pill">Eingang</span>
+            <span class="vocab-pill">links</span>
+            <span class="vocab-pill">rechts</span>
+            <span class="vocab-pill">geradeaus</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================
+     SZENE 2: REZEPTIONSDIALOG – ANIMIERTER WARTEBEREICH
+     ============================================= -->
+<section id="scene-2" class="scene">
+  <div class="progress-bar" id="progress-2"></div>
+  <div class="scene-inner">
+    <h2 class="scene-title">👩‍💼 An der Rezeption</h2>
+    <p class="scene-subtitle">Wähle die richtige Antwort!</p>
+
+    <div class="reception-scene">
+
+      <!-- ── Illustrated clinic reception room ── -->
+      <div class="clinic-room">
+        <!-- Background decorations -->
+        <div class="room-window"></div>
+        <div class="room-sun"></div>
+        <div class="wall-cross">🏥</div>
+        <div class="room-floor"></div>
+
+        <!-- Receptionist behind desk -->
+        <div class="room-character" id="rec-char-wrap" style="z-index:5;">
+          <!-- Receptionist SVG cartoon – built with pure CSS/SVG -->
+          <div style="position:relative;">
+            <svg id="rec-svg" class="char-svg idle" width="72" height="120" viewBox="0 0 72 120" xmlns="http://www.w3.org/2000/svg">
+              <!-- Body / white coat -->
+              <rect x="16" y="54" width="40" height="46" rx="10" fill="#ffffff" stroke="#d0d8e0" stroke-width="2"/>
+              <!-- Coat lapels – blue accent -->
+              <polygon points="28,54 36,68 36,54" fill="#aed6f1"/>
+              <polygon points="44,54 36,68 36,54" fill="#aed6f1"/>
+              <!-- Stethoscope -->
+              <path d="M28 62 Q24 72 28 80" fill="none" stroke="#2e86c1" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="28" cy="82" r="4" fill="none" stroke="#2e86c1" stroke-width="2"/>
+              <!-- Arms -->
+              <rect x="6"  y="58" width="12" height="28" rx="6" fill="#ffffff" stroke="#d0d8e0" stroke-width="2"/>
+              <rect x="54" y="58" width="12" height="28" rx="6" fill="#ffffff" stroke="#d0d8e0" stroke-width="2"/>
+              <!-- Hands -->
+              <ellipse cx="12"  cy="88" rx="6" ry="5" fill="#f0c8a0"/>
+              <ellipse cx="60" cy="88" rx="6" ry="5" fill="#f0c8a0"/>
+              <!-- Neck -->
+              <rect x="30" y="44" width="12" height="12" rx="4" fill="#f0c8a0"/>
+              <!-- Head -->
+              <ellipse cx="36" cy="34" rx="18" ry="20" fill="#f0c8a0" stroke="#e0a870" stroke-width="1.5"/>
+              <!-- Hair -->
+              <ellipse cx="36" cy="17" rx="18" ry="10" fill="#4a3020"/>
+              <rect x="18" y="17" width="36" height="8" fill="#4a3020"/>
+              <!-- Eyes with blink animation -->
+              <ellipse id="rec-eye-l" cx="28" cy="32" rx="3.5" ry="3.5" fill="white" stroke="#333" stroke-width="1"/>
+              <ellipse cx="28" cy="33" rx="2" ry="2" fill="#333"/>
+              <ellipse id="rec-eye-r" cx="44" cy="32" rx="3.5" ry="3.5" fill="white" stroke="#333" stroke-width="1"/>
+              <ellipse cx="44" cy="33" rx="2" ry="2" fill="#333"/>
+              <!-- Smile -->
+              <path d="M28 42 Q36 49 44 42" fill="none" stroke="#c07050" stroke-width="2" stroke-linecap="round"/>
+              <!-- Blush -->
+              <ellipse cx="22" cy="40" rx="5" ry="3" fill="#f8c0a0" opacity="0.6"/>
+              <ellipse cx="50" cy="40" rx="5" ry="3" fill="#f8c0a0" opacity="0.6"/>
+              <!-- Head band / nurse cap accent -->
+              <rect x="22" y="14" width="28" height="6" rx="3" fill="#2e86c1" opacity="0.7"/>
+              <!-- Cross on band -->
+              <rect x="33" y="14" width="6" height="6" rx="1" fill="white" opacity="0.9"/>
+            </svg>
+            <!-- Speech bubble above receptionist -->
+            <div id="rec-bubble" class="room-bubble hidden" style="top:-72px;left:-20px;min-width:130px;"></div>
+          </div>
+          <div class="char-name-tag">Rezeptionistin</div>
+        </div>
+
+        <!-- Desk between them -->
+        <div class="reception-desk" style="margin-bottom:30px;z-index:3;">
+          <div class="desk-top"></div>
+          <div class="desk-front"></div>
+          <div class="desk-sign">Rezeption</div>
+        </div>
+
+        <!-- Patient standing -->
+        <div class="room-character" id="pat2-char-wrap">
+          <div style="position:relative;">
+            <svg id="pat2-svg" class="char-svg idle" width="66" height="116" viewBox="0 0 66 116" xmlns="http://www.w3.org/2000/svg">
+              <!-- Body – casual clothes -->
+              <rect x="13" y="52" width="40" height="44" rx="10" fill="#3fa87a" stroke="#2d7d5a" stroke-width="2"/>
+              <!-- Arms -->
+              <rect x="3"  y="56" width="12" height="26" rx="6" fill="#3fa87a" stroke="#2d7d5a" stroke-width="2"/>
+              <rect x="51" y="56" width="12" height="26" rx="6" fill="#3fa87a" stroke="#2d7d5a" stroke-width="2"/>
+              <!-- Hands -->
+              <ellipse cx="9"  cy="84" rx="6" ry="5" fill="#f0c8a0"/>
+              <ellipse cx="57" cy="84" rx="6" ry="5" fill="#f0c8a0"/>
+              <!-- Legs -->
+              <rect x="16" y="92" width="14" height="18" rx="5" fill="#2d5a8e" stroke="#1e4a7e" stroke-width="1.5"/>
+              <rect x="36" y="92" width="14" height="18" rx="5" fill="#2d5a8e" stroke="#1e4a7e" stroke-width="1.5"/>
+              <!-- Shoes -->
+              <ellipse cx="23" cy="110" rx="9" ry="5" fill="#333"/>
+              <ellipse cx="43" cy="110" rx="9" ry="5" fill="#333"/>
+              <!-- Neck -->
+              <rect x="27" y="43" width="12" height="12" rx="4" fill="#f0c8a0"/>
+              <!-- Head -->
+              <ellipse cx="33" cy="32" rx="18" ry="19" fill="#f0c8a0" stroke="#e0a870" stroke-width="1.5"/>
+              <!-- Hair – short dark -->
+              <ellipse cx="33" cy="16" rx="18" ry="9" fill="#2a1a0a"/>
+              <rect x="15" y="16" width="36" height="7" fill="#2a1a0a"/>
+              <!-- Eyes -->
+              <ellipse cx="25" cy="30" rx="3.5" ry="3.5" fill="white" stroke="#333" stroke-width="1"/>
+              <ellipse cx="25" cy="31" rx="2" ry="2" fill="#333"/>
+              <ellipse cx="41" cy="30" rx="3.5" ry="3.5" fill="white" stroke="#333" stroke-width="1"/>
+              <ellipse cx="41" cy="31" rx="2" ry="2" fill="#333"/>
+              <!-- Neutral mouth -->
+              <path d="M26 40 Q33 44 40 40" fill="none" stroke="#c07050" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <!-- Patient speech bubble -->
+            <div id="pat2-bubble" class="room-bubble right-side hidden" style="top:-68px;right:-10px;min-width:130px;"></div>
+          </div>
+          <div class="char-name-tag" style="border-color:var(--blue-light);color:var(--blue-dark);">Du (Patient)</div>
+        </div>
+      </div>
+
+      <!-- ── Answer choice panel ── -->
+      <div class="choice-panel" id="d2-choice-panel">
+        <div class="choice-label">💬 Deine Antwort:</div>
+        <div class="choice-group">
+          <button class="choice-btn" id="choice-btn-a" onclick="pickDialogue2(this,'a')">
+            Ja, ich habe einen Termin.
+          </button>
+          <button class="choice-btn" id="choice-btn-b" onclick="pickDialogue2(this,'b')">
+            Nein, ich habe keinen Termin.
+          </button>
+        </div>
+      </div>
+
+      <!-- Feedback + continue -->
+      <div class="scene2-feedback-row">
+        <div id="feedback-2" class="feedback hidden" style="flex:1;margin:0;"></div>
+      </div>
+      <div style="text-align:center;">
+        <button id="btn-continue-2" class="btn btn-primary hidden" onclick="goScene(3)">Weiter → Szene 3 ›</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================
+     SZENE 3: CODING-WEG ZUM ARZT (einfacher)
+     ============================================= -->
+<section id="scene-3" class="scene">
+  <div class="progress-bar" id="progress-3"></div>
+  <div class="scene-inner">
+    <h2 class="scene-title">🚶 Weg zum Arzt</h2>
+    <p class="scene-subtitle">Kürzerer Weg – aber pass auf die Hindernisse auf!</p>
+
+    <div class="coding-layout">
+      <div class="grid-container">
+        <div class="flex-row" style="justify-content:space-between;width:100%;">
+          <div class="timer-display">
+            <span class="timer-icon">⏱</span>
+            <span>Zeit: <strong id="timer3-display">0s</strong></span>
+          </div>
+          <div class="compass">
+            <span>Richtung:</span>
+            <strong id="dir3-display">➡️</strong>
+          </div>
+        </div>
+        <div id="grid3" class="grid-canvas"></div>
+        <!-- Legende: erklärt die Symbole auf der Karte -->
+        <div class="grid-legend">
+          <span>🚩 Start</span>
+          <span>🩺 Ziel</span>
+          <span>🌿🧑 Hindernis</span>
+        </div>
+        <div id="feedback-3" class="feedback hidden"></div>
+        <div class="btn-row">
+          <button class="btn btn-secondary btn-sm" id="run-btn-3" onclick="runCommands(3)">▶ Ausführen</button>
+          <button class="btn btn-outline btn-sm" onclick="resetScene(3)">↺ Zurücksetzen</button>
+        </div>
+      </div>
+
+      <div class="command-panel">
+        <div class="card">
+          <div class="panel-label">📦 Befehlsblöcke</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <button class="cmd-block forward"   onclick="addCommand(3,'forward')">⬆ Vorwärts gehen</button>
+            <button class="cmd-block turnleft"  onclick="addCommand(3,'left')">↰ Links drehen</button>
+            <button class="cmd-block turnright" onclick="addCommand(3,'right')">↱ Rechts drehen</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="panel-label">📋 Mein Programm</div>
+          <div id="seq-3" class="sequence-list"></div>
+          <button class="btn btn-outline btn-sm mt-8 full-width" onclick="clearCommands(3)">✕ Liste leeren</button>
+        </div>
+        <div class="vocab-strip">
+          <div class="vocab-title">💬 Wörter</div>
+          <div class="vocab-items">
+            <span class="vocab-pill">Arzt</span>
+            <span class="vocab-pill">Zimmer</span>
+            <span class="vocab-pill">Flur</span>
+            <span class="vocab-pill">Hindernis</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================
+     SZENE 4: ARZTDIALOG – ANIMIERTES ARZTZIMMER
+     ============================================= -->
+<section id="scene-4" class="scene">
+  <div class="progress-bar" id="progress-4"></div>
+  <div class="scene-inner">
+    <h2 class="scene-title">🩺 Beim Arzt</h2>
+    <p class="scene-subtitle">Bringe das Gespräch in die richtige Reihenfolge!</p>
+
+    <div class="doctor-scene">
+
+      <!-- Illness badge (filled by JS) -->
+      <div style="text-align:center;">
+        <div class="illness-badge" id="illness-badge">🤒 <span id="illness-badge-name">Krankheit</span></div>
+      </div>
+
+      <!-- ── Animated doctor room ── -->
+      <div class="doctor-room">
+        <!-- Background -->
+        <div class="dr-window"></div>
+        <div class="dr-poster">
+          <span>💊</span>
+          <div class="dr-poster-label">Gesundheit zuerst</div>
+        </div>
+        <div class="dr-floor"></div>
+
+        <!-- Doctor character -->
+        <div class="dr-char" id="dr-char-wrap">
+          <div style="position:relative;">
+            <svg id="dr-svg" class="char-svg idle" width="76" height="124" viewBox="0 0 76 124" xmlns="http://www.w3.org/2000/svg">
+              <!-- White coat body -->
+              <rect x="14" y="56" width="48" height="48" rx="12" fill="#ffffff" stroke="#c8d8e8" stroke-width="2"/>
+              <!-- Coat pocket -->
+              <rect x="18" y="72" width="14" height="16" rx="4" fill="none" stroke="#c0d0e0" stroke-width="1.5"/>
+              <text x="20" y="84" font-size="9" fill="#2e86c1">🖊</text>
+              <!-- Shirt/tie underneath -->
+              <rect x="30" y="56" width="16" height="20" fill="#aed6f1"/>
+              <polygon points="38,56 34,74 38,80 42,74" fill="#2e86c1"/>
+              <!-- Arms -->
+              <rect x="2"  y="60" width="14" height="32" rx="7" fill="white" stroke="#c8d8e8" stroke-width="2"/>
+              <rect x="60" y="60" width="14" height="32" rx="7" fill="white" stroke="#c8d8e8" stroke-width="2"/>
+              <!-- Hands -->
+              <ellipse cx="9"  cy="94" rx="7" ry="6" fill="#f0c8a0"/>
+              <ellipse cx="67" cy="94" rx="7" ry="6" fill="#f0c8a0"/>
+              <!-- Clipboard in hand -->
+              <rect x="58" y="78" width="18" height="22" rx="3" fill="#f5f0e8" stroke="#c0b090" stroke-width="1.5"/>
+              <rect x="60" y="82" width="14" height="2" rx="1" fill="#c0c0c0"/>
+              <rect x="60" y="87" width="10" height="2" rx="1" fill="#c0c0c0"/>
+              <rect x="60" y="92" width="12" height="2" rx="1" fill="#c0c0c0"/>
+              <!-- Neck -->
+              <rect x="31" y="46" width="14" height="13" rx="5" fill="#f0c8a0"/>
+              <!-- Head -->
+              <ellipse cx="38" cy="34" rx="20" ry="22" fill="#f0c8a0" stroke="#e0a870" stroke-width="1.5"/>
+              <!-- Hair – short professional -->
+              <ellipse cx="38" cy="16" rx="20" ry="10" fill="#3a2810"/>
+              <rect x="18" y="16" width="40" height="8" fill="#3a2810"/>
+              <!-- Glasses -->
+              <ellipse cx="29" cy="32" rx="7" ry="6" fill="none" stroke="#5a4030" stroke-width="2"/>
+              <ellipse cx="47" cy="32" rx="7" ry="6" fill="none" stroke="#5a4030" stroke-width="2"/>
+              <line x1="36" y1="32" x2="40" y2="32" stroke="#5a4030" stroke-width="2"/>
+              <line x1="18" y1="32" x2="22" y2="32" stroke="#5a4030" stroke-width="2"/>
+              <line x1="54" y1="32" x2="58" y2="32" stroke="#5a4030" stroke-width="2"/>
+              <!-- Eyes behind glasses -->
+              <ellipse cx="29" cy="33" rx="2.5" ry="2.5" fill="#333"/>
+              <ellipse cx="47" cy="33" rx="2.5" ry="2.5" fill="#333"/>
+              <!-- Calm smile -->
+              <path d="M28 44 Q38 51 48 44" fill="none" stroke="#c07050" stroke-width="2" stroke-linecap="round"/>
+              <!-- Stethoscope -->
+              <path d="M26 64 Q18 80 26 92" fill="none" stroke="#e05050" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="26" cy="94" r="5" fill="none" stroke="#e05050" stroke-width="2.5"/>
+            </svg>
+            <!-- Doctor speech bubble -->
+            <div id="dr-bubble" class="dr-bubble hidden" style="top:-76px;left:-10px;min-width:150px;"></div>
+          </div>
+          <div class="char-name-tag" style="border-color:var(--blue-light);color:var(--blue-dark);">Arzt</div>
+        </div>
+
+        <!-- Exam table in the middle -->
+        <div class="exam-table" style="z-index:3;margin-bottom:30px;">
+          <div class="exam-table-top"></div>
+          <div class="exam-table-leg"></div>
+        </div>
+
+        <!-- Patient character – illness animation applied by JS -->
+        <div class="pt-char" id="pt-char-wrap">
+          <div style="position:relative;" id="pt-anim-wrap">
+            <svg id="pt-svg" class="char-svg idle" width="66" height="116" viewBox="0 0 66 116" xmlns="http://www.w3.org/2000/svg">
+              <!-- Body – patient clothes (lighter casual) -->
+              <rect x="13" y="52" width="40" height="44" rx="10" fill="#d4e8f8" stroke="#a8c8e8" stroke-width="2"/>
+              <!-- Hospital gown lines -->
+              <line x1="33" y1="52" x2="33" y2="96" stroke="#a8c8e8" stroke-width="1" stroke-dasharray="4,4"/>
+              <!-- Arms -->
+              <rect x="3"  y="56" width="12" height="26" rx="6" fill="#d4e8f8" stroke="#a8c8e8" stroke-width="2"/>
+              <rect x="51" y="56" width="12" height="26" rx="6" fill="#d4e8f8" stroke="#a8c8e8" stroke-width="2"/>
+              <!-- Hands -->
+              <ellipse cx="9"  cy="84" rx="6" ry="5" fill="#f0c8a0"/>
+              <ellipse cx="57" cy="84" rx="6" ry="5" fill="#f0c8a0"/>
+              <!-- Legs / sitting on table -->
+              <rect x="16" y="92" width="14" height="18" rx="5" fill="#8090a8" stroke="#607080" stroke-width="1.5"/>
+              <rect x="36" y="92" width="14" height="18" rx="5" fill="#8090a8" stroke="#607080" stroke-width="1.5"/>
+              <!-- Shoes -->
+              <ellipse cx="23" cy="110" rx="9" ry="5" fill="#445"/>
+              <ellipse cx="43" cy="110" rx="9" ry="5" fill="#445"/>
+              <!-- Neck -->
+              <rect x="27" y="43" width="12" height="12" rx="4" fill="#f0c8a0"/>
+              <!-- Head -->
+              <ellipse cx="33" cy="32" rx="18" ry="19" fill="#f0c8a0" stroke="#e0a870" stroke-width="1.5"/>
+              <!-- Hair -->
+              <ellipse cx="33" cy="16" rx="18" ry="9" fill="#5a3a1a"/>
+              <rect x="15" y="16" width="36" height="7" fill="#5a3a1a"/>
+              <!-- Eyes – neutral/tired -->
+              <ellipse id="pt-eye-l" cx="25" cy="30" rx="3.5" ry="3.5" fill="white" stroke="#333" stroke-width="1"/>
+              <ellipse cx="25" cy="31" rx="2" ry="2" fill="#444"/>
+              <ellipse id="pt-eye-r" cx="41" cy="30" rx="3.5" ry="3.5" fill="white" stroke="#333" stroke-width="1"/>
+              <ellipse cx="41" cy="31" rx="2" ry="2" fill="#444"/>
+              <!-- Slightly sad mouth – default -->
+              <path id="pt-mouth" d="M26 41 Q33 38 40 41" fill="none" stroke="#c07050" stroke-width="2" stroke-linecap="round"/>
+              <!-- Illness overlay group – toggled by JS -->
+              <g id="pt-illness-overlay" opacity="0">
+                <!-- Hand on head (kopf) -->
+                <ellipse id="ol-hand" cx="33" cy="18" rx="10" ry="6" fill="#f0c8a0" opacity="0"/>
+              </g>
+            </svg>
+            <!-- Sweat drops for fever – hidden by default -->
+            <div class="sweat-drop hidden" id="sweat1"></div>
+            <div class="sweat-drop hidden" id="sweat2"></div>
+            <!-- Patient speech bubble -->
+            <div id="pt-bubble" class="dr-bubble pt-bubble hidden" style="top:-72px;right:-14px;min-width:140px;"></div>
+          </div>
+          <div class="char-name-tag">Patient</div>
+        </div>
+      </div>
+
+      <!-- ── Drag-to-reorder panel ── -->
+      <div class="reorder-panel" id="reorder-panel-wrap">
+        <div class="panel-label" style="margin-bottom:8px;">🖱️ Ziehe die Blöcke in die richtige Reihenfolge:</div>
+        <div id="reorder-list" class="reorder-area"></div>
+      </div>
+
+      <div id="feedback-4" class="feedback hidden"></div>
+
+      <div class="vocab-strip">
+        <div class="vocab-title">💬 Nützliche Ausdrücke</div>
+        <div class="vocab-items" id="vocab-4"></div>
+      </div>
+
+      <div class="btn-row" id="reorder-btns">
+        <button class="btn btn-primary" onclick="checkReorder()">✓ Antwort prüfen</button>
+        <button class="btn btn-outline" onclick="reshuffleReorder()">🔀 Neu mischen</button>
+      </div>
+
+      <!-- =============================================
+           PLAYBACK OVERLAY – shown after correct answer
+           Animated cinematic conversation panel
+           ============================================= -->
+      <div class="playback-overlay" id="playback-overlay">
+
+        <!-- ── Playback room: cinematic stage ── -->
+        <div class="playback-room" id="pb-room">
+          <!-- Top cinematic bar -->
+          <div class="pb-topbar">
+            <span class="pb-speaker-label" id="pb-speaker-label">🎬 Gespräch</span>
+            <div class="pb-progress-dots" id="pb-dots"></div>
+          </div>
+          <!-- Room decoration -->
+          <div class="pb-window"></div>
+          <div class="pb-poster"><span>💊</span><span>Gesundheit</span></div>
+          <div class="pb-floor"></div>
+
+          <!-- Doctor in playback room -->
+          <div class="pb-char" id="pb-dr-wrap">
+            <div style="position:relative;">
+              <!-- Reuse same doctor SVG inline -->
+              <svg id="pb-dr-svg" class="char-svg idle" width="76" height="124" viewBox="0 0 76 124" xmlns="http://www.w3.org/2000/svg">
+                <rect x="14" y="56" width="48" height="48" rx="12" fill="#ffffff" stroke="#c8d8e8" stroke-width="2"/>
+                <rect x="18" y="72" width="14" height="16" rx="4" fill="none" stroke="#c0d0e0" stroke-width="1.5"/>
+                <rect x="30" y="56" width="16" height="20" fill="#aed6f1"/>
+                <polygon points="38,56 34,74 38,80 42,74" fill="#2e86c1"/>
+                <rect x="2"  y="60" width="14" height="32" rx="7" fill="white" stroke="#c8d8e8" stroke-width="2"/>
+                <rect x="60" y="60" width="14" height="32" rx="7" fill="white" stroke="#c8d8e8" stroke-width="2"/>
+                <ellipse cx="9"  cy="94" rx="7" ry="6" fill="#f0c8a0"/>
+                <ellipse cx="67" cy="94" rx="7" ry="6" fill="#f0c8a0"/>
+                <rect x="58" y="78" width="18" height="22" rx="3" fill="#f5f0e8" stroke="#c0b090" stroke-width="1.5"/>
+                <rect x="60" y="82" width="14" height="2" rx="1" fill="#c0c0c0"/>
+                <rect x="60" y="87" width="10" height="2" rx="1" fill="#c0c0c0"/>
+                <rect x="60" y="92" width="12" height="2" rx="1" fill="#c0c0c0"/>
+                <rect x="31" y="46" width="14" height="13" rx="5" fill="#f0c8a0"/>
+                <ellipse cx="38" cy="34" rx="20" ry="22" fill="#f0c8a0" stroke="#e0a870" stroke-width="1.5"/>
+                <ellipse cx="38" cy="16" rx="20" ry="10" fill="#3a2810"/>
+                <rect x="18" y="16" width="40" height="8" fill="#3a2810"/>
+                <ellipse cx="29" cy="32" rx="7" ry="6" fill="none" stroke="#5a4030" stroke-width="2"/>
+                <ellipse cx="47" cy="32" rx="7" ry="6" fill="none" stroke="#5a4030" stroke-width="2"/>
+                <line x1="36" y1="32" x2="40" y2="32" stroke="#5a4030" stroke-width="2"/>
+                <line x1="18" y1="32" x2="22" y2="32" stroke="#5a4030" stroke-width="2"/>
+                <line x1="54" y1="32" x2="58" y2="32" stroke="#5a4030" stroke-width="2"/>
+                <ellipse cx="29" cy="33" rx="2.5" ry="2.5" fill="#333"/>
+                <ellipse cx="47" cy="33" rx="2.5" ry="2.5" fill="#333"/>
+                <path id="pb-dr-mouth" d="M28 44 Q38 51 48 44" fill="none" stroke="#c07050" stroke-width="2" stroke-linecap="round"/>
+                <path d="M26 64 Q18 80 26 92" fill="none" stroke="#e05050" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="26" cy="94" r="5" fill="none" stroke="#e05050" stroke-width="2.5"/>
+              </svg>
+              <!-- Doctor playback bubble -->
+              <div id="pb-dr-bubble" class="pb-bubble" style="top:-86px;left:-14px;min-width:160px;"></div>
+            </div>
+            <div class="char-name-tag" style="border-color:var(--blue-light);color:var(--blue-dark);">Arzt</div>
+          </div>
+
+          <!-- Exam table -->
+          <div class="pb-table" style="z-index:3;margin-bottom:30px;">
+            <div class="pb-table-top"></div>
+            <div class="pb-table-leg"></div>
+          </div>
+
+          <!-- Patient in playback room – illness animation applied -->
+          <div class="pb-char" id="pb-pt-wrap">
+            <div style="position:relative;" id="pb-pt-anim-wrap">
+              <svg id="pb-pt-svg" class="char-svg idle" width="66" height="116" viewBox="0 0 66 116" xmlns="http://www.w3.org/2000/svg">
+                <rect x="13" y="52" width="40" height="44" rx="10" fill="#d4e8f8" stroke="#a8c8e8" stroke-width="2"/>
+                <line x1="33" y1="52" x2="33" y2="96" stroke="#a8c8e8" stroke-width="1" stroke-dasharray="4,4"/>
+                <rect x="3"  y="56" width="12" height="26" rx="6" fill="#d4e8f8" stroke="#a8c8e8" stroke-width="2"/>
+                <rect x="51" y="56" width="12" height="26" rx="6" fill="#d4e8f8" stroke="#a8c8e8" stroke-width="2"/>
+                <ellipse cx="9"  cy="84" rx="6" ry="5" fill="#f0c8a0"/>
+                <ellipse cx="57" cy="84" rx="6" ry="5" fill="#f0c8a0"/>
+                <rect x="16" y="92" width="14" height="18" rx="5" fill="#8090a8" stroke="#607080" stroke-width="1.5"/>
+                <rect x="36" y="92" width="14" height="18" rx="5" fill="#8090a8" stroke="#607080" stroke-width="1.5"/>
+                <ellipse cx="23" cy="110" rx="9" ry="5" fill="#445"/>
+                <ellipse cx="43" cy="110" rx="9" ry="5" fill="#445"/>
+                <rect x="27" y="43" width="12" height="12" rx="4" fill="#f0c8a0"/>
+                <ellipse cx="33" cy="32" rx="18" ry="19" fill="#f0c8a0" stroke="#e0a870" stroke-width="1.5"/>
+                <ellipse cx="33" cy="16" rx="18" ry="9" fill="#5a3a1a"/>
+                <rect x="15" y="16" width="36" height="7" fill="#5a3a1a"/>
+                <ellipse cx="25" cy="30" rx="3.5" ry="3.5" fill="white" stroke="#333" stroke-width="1"/>
+                <ellipse cx="25" cy="31" rx="2" ry="2" fill="#444"/>
+                <ellipse cx="41" cy="30" rx="3.5" ry="3.5" fill="white" stroke="#333" stroke-width="1"/>
+                <ellipse cx="41" cy="31" rx="2" ry="2" fill="#444"/>
+                <path id="pb-pt-mouth" d="M26 41 Q33 38 40 41" fill="none" stroke="#c07050" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <!-- Sweat drops (fever only) -->
+              <div class="sweat-drop hidden" id="pb-sweat1"></div>
+              <div class="sweat-drop hidden" id="pb-sweat2"></div>
+              <!-- Patient playback bubble -->
+              <div id="pb-pt-bubble" class="pb-bubble pb-pt-bubble" style="top:-80px;right:-14px;min-width:145px;"></div>
+            </div>
+            <div class="char-name-tag">Patient</div>
+          </div>
+        </div>
+
+        <!-- ── Live transcript scrolling below room ── -->
+        <div class="pb-transcript" id="pb-transcript">
+          <div class="pb-transcript-title">📜 Gesprächsverlauf</div>
+        </div>
+
+        <!-- ── Success banner – revealed at end ── -->
+        <div class="pb-success-banner" id="pb-success-banner">
+          <div class="pb-success-emoji">🎉</div>
+          <div class="pb-success-title">Ausgezeichnet!</div>
+          <div class="pb-success-sub">Das Gespräch war perfekt! Du hast den Dialog gemeistert.</div>
+        </div>
+
+        <!-- Continue button (appears after playback ends) -->
+        <div style="text-align:center;">
+          <button id="btn-continue-4" class="btn btn-secondary hidden" onclick="goScene('final')">🏁 Ergebnis ansehen</button>
+        </div>
+
+      </div>
+      <!-- END playback-overlay -->
+    </div>
+  </div>
+</section>
+
+<!-- =============================================
+     ABSCHLUSSBILDSCHIRM
+     ============================================= -->
+<section id="scene-final" class="scene">
+  <div class="final-inner">
+    <div class="final-trophy" id="final-trophy">🏆</div>
+    <h1 class="final-title" id="final-title">Gut gemacht!</h1>
+    <p class="final-subtitle" id="final-subtitle">Du hast alle Szenen abgeschlossen!</p>
+
+    <div class="result-grid">
+      <div class="result-card">
+        <span class="result-val" id="res-time1">—</span>
+        <span class="result-label">Stufe 1 Zeit</span>
+      </div>
+      <div class="result-card">
+        <span class="result-val" id="res-time3">—</span>
+        <span class="result-label">Stufe 2 Zeit</span>
+      </div>
+      <div class="result-card">
+        <span class="result-val" id="res-dialog">—</span>
+        <span class="result-label">Dialog</span>
+      </div>
+    </div>
+
+    <button class="btn btn-restart" onclick="restartApp()">🔄 Nochmal spielen</button>
+  </div>
+</section>
+
+<script>
+/* =============================================
+   GLOBALER ZUSTAND
+   Speichert Szenenfortschritt, Zeiten, Ergebnisse
+   ============================================= */
+const appState = {
+  scene1Time: null,   // Sekunden für Szene 1
+  scene3Time: null,   // Sekunden für Szene 3
+  dialogCorrect: false,
+  dialogue2Done: false,
+  currentIllness: null, // zufällig gewählte Krankheit
+};
+
+/* =============================================
+   FORTSCHRITTSBALKEN
+   ============================================= */
+function renderProgress(active) {
+  const steps = [
+    { num: 1, label: 'Rezeption' },
+    { num: 2, label: 'Dialog' },
+    { num: 3, label: 'Arzt' },
+    { num: 4, label: 'Gespräch' },
+  ];
+  const el = document.getElementById(`progress-${active}`);
+  if (!el) return;
+  el.innerHTML = steps.map((s, i) => `
+    <div class="progress-step ${s.num < active ? 'done' : s.num === active ? 'active' : ''}">
+      <div class="step-dot">${s.num < active ? '✓' : s.num}</div>
+      <span>${s.label}</span>
+    </div>
+    ${i < steps.length - 1 ? `<div class="progress-line ${s.num < active ? 'done' : ''}"></div>` : ''}
+  `).join('');
+}
+
+/* =============================================
+   SZENENNAVIGATION
+   ============================================= */
+function goScene(name) {
+  document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+  if (name === 'final') {
+    buildFinalScreen();
+    document.getElementById('scene-final').classList.add('active');
+    return;
+  }
+  const el = document.getElementById(`scene-${name}`);
+  if (el) el.classList.add('active');
+  if (name === 1) { renderProgress(1); initGrid(1); }
+  if (name === 2) { renderProgress(2); initScene2(); }
+  if (name === 3) { renderProgress(3); initGrid(3); }
+  if (name === 4) { renderProgress(4); initReorder(); }
+}
+
+function startApp() { goScene(1); }
+
+function restartApp() {
+  // Alles zurücksetzen
+  appState.scene1Time = null;
+  appState.scene3Time = null;
+  appState.dialogCorrect = false;
+  appState.dialogue2Done = false;
+  appState.currentIllness = null;
+  goScene('title');
+  document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+  document.getElementById('scene-title').classList.add('active');
+}
+
+/* =============================================
+   FEEDBACK-HELFER
+   ============================================= */
+function showFeedback(id, type, msg) {
+  const el = document.getElementById(`feedback-${id}`);
+  if (!el) return;
+  el.className = `feedback ${type}`;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+function hideFeedback(id) {
+  const el = document.getElementById(`feedback-${id}`);
+  if (el) el.classList.add('hidden');
+}
+
+/* =============================================
+   ==========================================
+   KARTEN-SYSTEM – 4×4 FESTES GITTER
+   
+   DESIGN-PRINZIPIEN:
+   - Feste 4×4 Größe (immer)
+   - Mindestens 3 Richtungswechsel nötig
+   - Hindernisse blockieren Abkürzungen
+   - Mehrere kuratierte Layouts pro Schwierigkeitsstufe
+   - Zufällige Auswahl beim Start → Wiederholbarkeit
+   
+   Jedes Layout definiert:
+     map:   4×4-Array (' '=frei, 'X'=Hindernis)
+     start: { row, col } – immer links
+     goal:  { row, col } – immer rechts
+     hint:  kurze Beschreibung der Pflichtbewegungen
+   ==========================================
+   ============================================= */
+
+/*
+  Richtungs-Kodierung:
+  0 = oben    (up)
+  1 = rechts  (right)
+  2 = unten   (down)
+  3 = links   (left)
+*/
+const DIR_VECTORS = [
+  { dr: -1, dc:  0 }, // 0: oben
+  { dr:  0, dc:  1 }, // 1: rechts
+  { dr:  1, dc:  0 }, // 2: unten
+  { dr:  0, dc: -1 }, // 3: links
+];
+const DIR_EMOJIS = ['⬆️','➡️','⬇️','⬅️'];
+
+/* Zufallszahl zwischen min und max (inklusiv) */
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/* ─────────────────────────────────────────────
+   KURATIERTE LAYOUTS – SZENE 1 (schwieriger)
+   Jeder Weg benötigt mindestens 3 Abbiegungen.
+   X = Hindernis (Pflanze / Patient)
+   S = Start  (immer Spalte 0)
+   G = Ziel   (immer Spalte 3)
+   
+   Karten sind als Strings kodiert:
+   Zeilen durch '|' getrennt, 4 Zeichen pro Zeile
+   ' ' = frei, 'X' = Hindernis
+   ───────────────────────────────────────────── */
+const LAYOUTS_SCENE1 = [
+  {
+    // Weg: → ↓ → ↑ → (Zickzack durch Mitte)
+    // Start: Zeile 0, Ziel: Zeile 0 Spalte 3 – aber direkte Linie blockiert
+    rows: [
+      [' ','X',' ','X'],  // Reihe 0
+      [' ',' ','X',' '],  // Reihe 1 – Tunnel
+      ['X',' ',' ',' '],  // Reihe 2
+      [' ','X',' ','X'],  // Reihe 3
+    ],
+    start: { row: 0, col: 0 },
+    goal:  { row: 2, col: 3 },
+    // Kürzester Weg: →↓→↓→ (3 Abbiegungen)
+  },
+  {
+    // Zickzack von links nach rechts, mit Blockaden in jeder Gasse
+    rows: [
+      [' ',' ','X',' '],
+      ['X','X',' ','X'],
+      [' ',' ',' ','X'],
+      ['X',' ','X',' '],
+    ],
+    start: { row: 0, col: 0 },
+    goal:  { row: 3, col: 3 },
+    // Weg: ↓↓ →→ ↑↑ →→ (4 Abbiegungen)
+  },
+  {
+    // Spiralartiger Weg – blockierte Ecken erzwingen Umweg
+    rows: [
+      [' ','X',' ',' '],
+      [' ','X','X',' '],
+      [' ',' ','X',' '],
+      ['X',' ',' ',' '],
+    ],
+    start: { row: 0, col: 0 },
+    goal:  { row: 0, col: 3 },
+    // Direkte Linie blockiert → Umweg nach unten nötig
+  },
+  {
+    // Doppelte Barriere in der Mitte
+    rows: [
+      [' ',' ','X',' '],
+      ['X',' ','X',' '],
+      [' ',' ',' ','X'],
+      [' ','X',' ',' '],
+    ],
+    start: { row: 2, col: 0 },
+    goal:  { row: 0, col: 3 },
+    // Muss nach oben, rechts, hoch, rechts (4 Abbiegungen)
+  },
+  {
+    // Schlangenförmig
+    rows: [
+      [' ',' ',' ','X'],
+      ['X','X',' ','X'],
+      [' ',' ',' ',' '],
+      [' ','X','X','X'],
+    ],
+    start: { row: 0, col: 0 },
+    goal:  { row: 2, col: 3 },
+  },
+  {
+    // Eckblocker – verhindert Randabkürzung
+    rows: [
+      ['X',' ','X',' '],
+      [' ',' ','X',' '],
+      [' ','X',' ',' '],
+      [' ',' ',' ','X'],
+    ],
+    start: { row: 1, col: 0 },
+    goal:  { row: 2, col: 3 },
+  },
+];
+
+/* ─────────────────────────────────────────────
+   KURATIERTE LAYOUTS – SZENE 3 (etwas einfacher,
+   aber immer noch mind. 3 Abbiegungen nötig)
+   ───────────────────────────────────────────── */
+const LAYOUTS_SCENE3 = [
+  {
+    // Einfacherer Zickzack
+    rows: [
+      [' ',' ','X',' '],
+      ['X',' ',' ','X'],
+      [' ','X',' ',' '],
+      [' ',' ','X',' '],
+    ],
+    start: { row: 0, col: 0 },
+    goal:  { row: 1, col: 3 },
+  },
+  {
+    // Zwei Hindernisreihen
+    rows: [
+      [' ','X',' ',' '],
+      [' ',' ','X',' '],
+      ['X',' ',' ','X'],
+      [' ',' ',' ',' '],
+    ],
+    start: { row: 3, col: 0 },
+    goal:  { row: 0, col: 3 },
+  },
+  {
+    // Diagonale Blockade
+    rows: [
+      [' ',' ',' ','X'],
+      [' ','X',' ',' '],
+      ['X',' ',' ',' '],
+      [' ',' ','X',' '],
+    ],
+    start: { row: 0, col: 0 },
+    goal:  { row: 3, col: 3 },
+  },
+  {
+    rows: [
+      [' ','X',' ',' '],
+      [' ',' ','X',' '],
+      ['X',' ',' ','X'],
+      [' ',' ',' ',' '],
+    ],
+    start: { row: 0, col: 0 },
+    goal:  { row: 2, col: 2 },
+  },
+];
+
+/* ─────────────────────────────────────────────
+   BFS-PFADVALIDIERUNG
+   Prüft, ob Start → Ziel erreichbar ist.
+   Gibt true zurück wenn ein Weg existiert.
+   ───────────────────────────────────────────── */
+function isSolvable(map, start, goal) {
+  const rows = map.length, cols = map[0].length;
+  const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+  const queue = [{ r: start.row, c: start.col }];
+  visited[start.row][start.col] = true;
+
+  while (queue.length > 0) {
+    const { r, c } = queue.shift();
+    if (r === goal.row && c === goal.col) return true;
+    for (const { dr, dc } of DIR_VECTORS) {
+      const nr = r + dr, nc = c + dc;
+      if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited[nr][nc] && map[nr][nc] !== 'X') {
+        visited[nr][nc] = true;
+        queue.push({ r: nr, c: nc });
+      }
+    }
+  }
+  return false;
+}
+
+/* ─────────────────────────────────────────────
+   LAYOUT AUSWÄHLEN
+   Wählt ein zufälliges Layout aus dem Pool und
+   prüft Lösbarkeit. Fällt auf erstes Layout zurück.
+   ───────────────────────────────────────────── */
+function pickLayout(sceneNum) {
+  const pool = sceneNum === 1 ? LAYOUTS_SCENE1 : LAYOUTS_SCENE3;
+  // Zufällige Auswahl aus dem Pool
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  for (const layout of shuffled) {
+    if (isSolvable(layout.rows, layout.start, layout.goal)) {
+      return { map: layout.rows.map(r => [...r]), start: layout.start, goal: layout.goal };
+    }
+  }
+  // Fallback: erstes lösbares Layout
+  return { map: pool[0].rows.map(r => [...r]), start: pool[0].start, goal: pool[0].goal };
+}
+
+/* ─── Pro-Grid-Zustand ─── */
+const gridData = {
+  1: { map: null, start: null, goal: null, startDir: 1, commands: [], charRow: 0, charCol: 0, charDir: 1, running: false, timerStart: null, timerInterval: null },
+  3: { map: null, start: null, goal: null, startDir: 1, commands: [], charRow: 0, charCol: 0, charDir: 1, running: false, timerStart: null, timerInterval: null },
+};
+
+/* ─── Grid initialisieren (kuratiertes 4×4-Layout) ─── */
+function initGrid(sceneNum) {
+  const gd = gridData[sceneNum];
+
+  // Wähle ein zufälliges Layout aus dem kuratierten Pool
+  // Immer 4×4, mindestens 3 Richtungswechsel nötig
+  const layout = pickLayout(sceneNum);
+
+  gd.map      = layout.map;
+  gd.start    = layout.start;
+  gd.goal     = layout.goal;
+  gd.startDir = 1;            // Charakter zeigt immer zuerst nach rechts
+  gd.charRow  = layout.start.row;
+  gd.charCol  = layout.start.col;
+  gd.charDir  = 1;
+  gd.commands = [];
+  gd.running  = false;
+
+  stopTimer(sceneNum);
+  renderSequence(sceneNum);
+  renderGrid(sceneNum);
+  hideFeedback(sceneNum);
+  updateCompass(sceneNum);
+}
+
+/* ─── Grid zeichnen ─── */
+function renderGrid(sceneNum) {
+  const gd   = gridData[sceneNum];
+  const el   = document.getElementById(`grid${sceneNum}`);
+  const cols = gd.map[0].length; // immer 4
+
+  // Festes 4×4 Raster mit 64px Zellen
+  el.style.gridTemplateColumns = `repeat(${cols}, 64px)`;
+  el.innerHTML = '';
+
+  gd.map.forEach((row, r) => {
+    row.forEach((cell, c) => {
+      const div = document.createElement('div');
+      div.className = 'cell';
+      div.id = `cell-${sceneNum}-${r}-${c}`;
+
+      if (cell === 'X') {
+        div.classList.add('obstacle');
+        // Abwechselnd Pflanze und Patient als Hindernis-Emoji
+        div.textContent = ((r + c) % 2 === 0) ? '🌿' : '🧑';
+      } else if (r === gd.goal.row && c === gd.goal.col) {
+        div.classList.add('goal-cell');
+        div.textContent = sceneNum === 1 ? '🏥' : '🩺';
+      } else if (r === gd.start.row && c === gd.start.col) {
+        div.classList.add('start-cell');
+        // Zeige Startmarkierung nur wenn Charakter woanders ist
+        if (r !== gd.charRow || c !== gd.charCol) div.textContent = '🚩';
+      }
+
+      // Charakter auf dieser Zelle zeichnen
+      if (r === gd.charRow && c === gd.charCol) {
+        div.innerHTML = '';
+        const char = document.createElement('div');
+        char.className = 'character';
+        char.textContent = DIR_EMOJIS[gd.charDir];
+        div.appendChild(char);
+        div.style.position = 'relative';
+      }
+
+      el.appendChild(div);
+    });
+  });
+}
+
+/* ─── Kompass-Anzeige aktualisieren ─── */
+function updateCompass(sceneNum) {
+  const el = document.getElementById(`dir${sceneNum}-display`);
+  if (el) el.textContent = DIR_EMOJIS[gridData[sceneNum].charDir];
+}
+
+/* ─── Timer-Funktionen ─── */
+function startTimer(sceneNum) {
+  const gd = gridData[sceneNum];
+  if (gd.timerInterval) return; // läuft schon
+  gd.timerStart = Date.now();
+  gd.timerInterval = setInterval(() => {
+    const secs = Math.floor((Date.now() - gd.timerStart) / 1000);
+    const el = document.getElementById(`timer${sceneNum}-display`);
+    if (el) el.textContent = `${secs}s`;
+  }, 500);
+}
+
+function stopTimer(sceneNum) {
+  const gd = gridData[sceneNum];
+  if (gd.timerInterval) {
+    clearInterval(gd.timerInterval);
+    gd.timerInterval = null;
+  }
+}
+
+function getElapsedSeconds(sceneNum) {
+  const gd = gridData[sceneNum];
+  if (!gd.timerStart) return 0;
+  return Math.floor((Date.now() - gd.timerStart) / 1000);
+}
+
+/* ─── Befehl hinzufügen ─── */
+function addCommand(sceneNum, cmd) {
+  const gd = gridData[sceneNum];
+  if (gd.running) return;
+  gd.commands.push(cmd);
+  // Timer beim ersten Befehl starten
+  if (gd.commands.length === 1) startTimer(sceneNum);
+  renderSequence(sceneNum);
+}
+
+/* ─── Befehlsliste leeren ─── */
+function clearCommands(sceneNum) {
+  const gd = gridData[sceneNum];
+  if (gd.running) return;
+  gd.commands = [];
+  renderSequence(sceneNum);
+}
+
+/* ─── Szene zurücksetzen (neue Karte generieren) ─── */
+function resetScene(sceneNum) {
+  stopTimer(sceneNum);
+  initGrid(sceneNum);
+}
+
+/* ─── Befehlssequenz anzeigen ─── */
+function renderSequence(sceneNum) {
+  const el  = document.getElementById(`seq-${sceneNum}`);
+  const cmd = gridData[sceneNum].commands;
+  const icons  = { forward: '⬆', left: '↰', right: '↱' };
+  const labels = { forward: 'Vor', left: 'Links', right: 'Rechts' };
+  const classes = { forward: 'forward', left: 'turnleft', right: 'turnright' };
+
+  el.innerHTML = cmd.length === 0
+    ? '<span style="color:var(--text-light);font-size:0.8rem;font-weight:600;padding:4px;">Füge Befehle hinzu…</span>'
+    : cmd.map((c, i) => `
+        <div class="seq-item ${classes[c]}">
+          <span style="opacity:0.6;font-size:0.72rem;">${i+1}</span>
+          ${icons[c]} ${labels[c]}
+        </div>`).join('');
+}
+
+/* ─── Befehle ausführen (animiert) ─── */
+function runCommands(sceneNum) {
+  const gd   = gridData[sceneNum];
+  if (gd.running) return;
+  if (gd.commands.length === 0) {
+    showFeedback(sceneNum, 'info', 'ℹ️ Füge zuerst Befehle hinzu!');
+    return;
+  }
+
+  hideFeedback(sceneNum);
+  gd.running = true;
+  document.getElementById(`run-btn-${sceneNum}`).disabled = true;
+
+  // Position zurücksetzen
+  let r   = gd.start.row;
+  let c   = gd.start.col;
+  let dir = gd.startDir;
+
+  // Simuliere alle Schritte und erkenne Fehler
+  const steps = [];
+  let crashMsg = null;
+
+  for (let i = 0; i < gd.commands.length; i++) {
+    const cmd = gd.commands[i];
+    if (cmd === 'left')  dir = (dir + 3) % 4;
+    if (cmd === 'right') dir = (dir + 1) % 4;
+    if (cmd === 'forward') {
+      const nr = r + DIR_VECTORS[dir].dr;
+      const nc = c + DIR_VECTORS[dir].dc;
+      if (nr < 0 || nr >= gd.map.length || nc < 0 || nc >= gd.map[0].length) {
+        crashMsg = '🚧 Außerhalb des Weges! Versuche es erneut.';
+        break;
+      }
+      if (gd.map[nr][nc] === 'X') {
+        crashMsg = '🌿 Hindernis! Da ist etwas im Weg. Versuche es erneut.';
+        break;
+      }
+      r = nr; c = nc;
+    }
+    steps.push({ r, c, dir, crashed: false });
+  }
+  if (crashMsg) steps.push({ r, c, dir, crashed: true, msg: crashMsg });
+
+  // Animation Schritt für Schritt
+  let idx = 0;
+  function nextStep() {
+    if (idx >= steps.length) {
+      // Animation fertig
+      gd.charRow = r;
+      gd.charCol = c;
+      gd.charDir = dir;
+      renderGrid(sceneNum);
+      updateCompass(sceneNum);
+      gd.running = false;
+      document.getElementById(`run-btn-${sceneNum}`).disabled = false;
+
+      if (crashMsg) {
+        showFeedback(sceneNum, 'error', crashMsg);
+      } else if (r === gd.goal.row && c === gd.goal.col) {
+        // 🎉 Erfolg!
+        stopTimer(sceneNum);
+        const elapsed = getElapsedSeconds(sceneNum);
+        if (sceneNum === 1) appState.scene1Time = elapsed;
+        if (sceneNum === 3) appState.scene3Time = elapsed;
+        showFeedback(sceneNum, 'success',
+          sceneNum === 1
+            ? `🎉 Bravo! Du hast die Rezeption erreicht! Zeit: ${elapsed} Sekunden`
+            : `🎉 Wunderbar! Du bist beim Arzt! Zeit: ${elapsed} Sekunden`
+        );
+        setTimeout(() => goScene(sceneNum + 1), 2000);
+      } else {
+        showFeedback(sceneNum, 'error', '❌ Falscher Weg! Das Ziel wurde nicht erreicht. Versuche es erneut.');
+      }
+      return;
+    }
+
+    const s = steps[idx++];
+    gd.charRow = s.r;
+    gd.charCol = s.c;
+    gd.charDir = s.dir;
+    renderGrid(sceneNum);
+    updateCompass(sceneNum);
+
+    // Besuchte Zelle markieren
+    const cellEl = document.getElementById(`cell-${sceneNum}-${s.r}-${s.c}`);
+    if (cellEl && !cellEl.classList.contains('goal-cell')) {
+      cellEl.classList.add('path-visited');
+    }
+    setTimeout(nextStep, 380);
+  }
+
+  renderGrid(sceneNum);
+  setTimeout(nextStep, 300);
+}
+
+/* =============================================
+   SZENE 2: REZEPTIONSDIALOG – ANIMATIONSLOGIK
+   ============================================= */
+function initScene2() {
+  appState.dialogue2Done = false;
+  // Buttons zurücksetzen
+  const btnA = document.getElementById('choice-btn-a');
+  const btnB = document.getElementById('choice-btn-b');
+  if (btnA) { btnA.disabled = false; btnA.classList.remove('selected'); }
+  if (btnB) { btnB.disabled = false; btnB.classList.remove('selected'); }
+  // Bubbles verstecken
+  const recBub = document.getElementById('rec-bubble');
+  const patBub = document.getElementById('pat2-bubble');
+  if (recBub) recBub.classList.add('hidden');
+  if (patBub) patBub.classList.add('hidden');
+  hideFeedback('2');
+  document.getElementById('btn-continue-2').classList.add('hidden');
+  // Charaktere in Idle
+  setCharState('rec-svg', 'idle');
+  setCharState('pat2-svg', 'idle');
+  // Rezeptionistin begrüßt nach kurzer Verzögerung
+  setTimeout(() => {
+    showRoomBubble('rec-bubble', 'Guten Tag! Haben Sie einen Termin?');
+    setCharState('rec-svg', 'speaking');
+    setTimeout(() => setCharState('rec-svg', 'idle'), 2400);
+  }, 600);
+}
+
+/* ─── Zeige Sprechblase im Raum ─── */
+function showRoomBubble(id, text) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.classList.remove('hidden');
+  // Trigger re-animation
+  el.style.animation = 'none';
+  el.offsetHeight;
+  el.style.animation = '';
+}
+
+/* ─── Charakter-Zustand setzen ─── */
+function setCharState(svgId, state) {
+  const el = document.getElementById(svgId);
+  if (!el) return;
+  el.classList.remove('idle', 'speaking');
+  el.classList.add(state);
+}
+
+/* ─── Dialogauswahl ─── */
+function pickDialogue2(btn, choice) {
+  if (appState.dialogue2Done) return;
+  appState.dialogue2Done = true;
+  btn.classList.add('selected');
+  document.getElementById('choice-btn-a').disabled = true;
+  document.getElementById('choice-btn-b').disabled = true;
+
+  // Patient spricht
+  const patText = choice === 'a' ? 'Ja, ich habe einen Termin.' : 'Nein, ich habe keinen Termin.';
+  showRoomBubble('pat2-bubble', patText);
+  setCharState('pat2-svg', 'speaking');
+
+  // Rezeptionistin antwortet
+  setTimeout(() => {
+    setCharState('pat2-svg', 'idle');
+    document.getElementById('pat2-bubble').classList.add('hidden');
+    const recResp = choice === 'a' ? 'Sehr gut! Bitte warten Sie.' : 'Kein Problem! Bitte warten Sie.';
+    showRoomBubble('rec-bubble', recResp);
+    setCharState('rec-svg', 'speaking');
+    setTimeout(() => {
+      setCharState('rec-svg', 'idle');
+      showFeedback('2', 'success', '✅ Gut gemacht! Beide Antworten sind möglich.');
+      setTimeout(() => document.getElementById('btn-continue-2').classList.remove('hidden'), 500);
+    }, 1800);
+  }, 1500);
+}
+
+/* =============================================
+   SZENE 4: ARZTDIALOG MIT ZUFÄLLIGER KRANKHEIT
+   ============================================= */
+
+/*
+  Krankheits-Variationen:
+  Jede Krankheit hat eine vollständige Dialog-Sequenz.
+  Format: Array von { speaker: 'arzt'|'patient', text: '...' }
+*/
+const ILLNESSES = [
+  {
+    name: 'Kopfschmerzen',
+    vocab: ['Kopfschmerzen', 'Schmerzmittel', 'ausruhen', 'trinken'],
+    dialogue: [
+      { speaker: 'arzt',    text: 'Guten Tag! Wie kann ich Ihnen helfen?' },
+      { speaker: 'patient', text: 'Guten Tag, Herr Doktor.' },
+      { speaker: 'arzt',    text: 'Was fehlt Ihnen?' },
+      { speaker: 'patient', text: 'Ich habe starke Kopfschmerzen.' },
+      { speaker: 'arzt',    text: 'Seit wann haben Sie diese Beschwerden?' },
+      { speaker: 'patient', text: 'Seit zwei Tagen.' },
+      { speaker: 'arzt',    text: 'Ich gebe Ihnen Schmerzmittel.' },
+      { speaker: 'patient', text: 'Soll ich sie vor oder nach dem Essen nehmen?' },
+      { speaker: 'arzt',    text: 'Nach dem Essen. Und bitte viel trinken!' },
+      { speaker: 'patient', text: 'Danke schön, Herr Doktor.' },
+      { speaker: 'arzt',    text: 'Gute Besserung!' },
+      { speaker: 'patient', text: 'Auf Wiedersehen.' },
+      { speaker: 'arzt',    text: 'Auf Wiedersehen!' },
+    ],
+  },
+  {
+    name: 'Bauchschmerzen',
+    vocab: ['Bauchschmerzen', 'Medikamente', 'Magen', 'nüchtern'],
+    dialogue: [
+      { speaker: 'arzt',    text: 'Guten Tag! Wie kann ich Ihnen helfen?' },
+      { speaker: 'patient', text: 'Guten Tag, Herr Doktor.' },
+      { speaker: 'arzt',    text: 'Was fehlt Ihnen?' },
+      { speaker: 'patient', text: 'Ich habe Bauchschmerzen.' },
+      { speaker: 'arzt',    text: 'Seit wann haben Sie diese Beschwerden?' },
+      { speaker: 'patient', text: 'Seit gestern Abend.' },
+      { speaker: 'arzt',    text: 'Ich gebe Ihnen Medikamente für den Magen.' },
+      { speaker: 'patient', text: 'Soll ich sie vor oder nach dem Essen nehmen?' },
+      { speaker: 'arzt',    text: 'Vor dem Essen. Dreimal täglich.' },
+      { speaker: 'patient', text: 'Danke schön, Herr Doktor.' },
+      { speaker: 'arzt',    text: 'Gute Besserung!' },
+      { speaker: 'patient', text: 'Auf Wiedersehen.' },
+      { speaker: 'arzt',    text: 'Auf Wiedersehen!' },
+    ],
+  },
+  {
+    name: 'Fieber',
+    vocab: ['Fieber', 'Temperatur', 'messen', 'Bett', 'ruhen'],
+    dialogue: [
+      { speaker: 'arzt',    text: 'Guten Tag! Wie kann ich Ihnen helfen?' },
+      { speaker: 'patient', text: 'Guten Tag, Herr Doktor.' },
+      { speaker: 'arzt',    text: 'Was fehlt Ihnen?' },
+      { speaker: 'patient', text: 'Ich habe hohes Fieber.' },
+      { speaker: 'arzt',    text: 'Seit wann haben Sie diese Beschwerden?' },
+      { speaker: 'patient', text: 'Seit drei Tagen.' },
+      { speaker: 'arzt',    text: 'Ich gebe Ihnen fiebersenkende Tabletten.' },
+      { speaker: 'patient', text: 'Soll ich sie vor oder nach dem Essen nehmen?' },
+      { speaker: 'arzt',    text: 'Nach dem Essen. Bleiben Sie im Bett und ruhen Sie sich aus.' },
+      { speaker: 'patient', text: 'Danke schön, Herr Doktor.' },
+      { speaker: 'arzt',    text: 'Gute Besserung!' },
+      { speaker: 'patient', text: 'Auf Wiedersehen.' },
+      { speaker: 'arzt',    text: 'Auf Wiedersehen!' },
+    ],
+  },
+  {
+    name: 'Husten',
+    vocab: ['Husten', 'Hustensaft', 'Hals', 'Erkältung'],
+    dialogue: [
+      { speaker: 'arzt',    text: 'Guten Tag! Wie kann ich Ihnen helfen?' },
+      { speaker: 'patient', text: 'Guten Tag, Herr Doktor.' },
+      { speaker: 'arzt',    text: 'Was fehlt Ihnen?' },
+      { speaker: 'patient', text: 'Ich habe starken Husten.' },
+      { speaker: 'arzt',    text: 'Seit wann haben Sie diese Beschwerden?' },
+      { speaker: 'patient', text: 'Seit einer Woche.' },
+      { speaker: 'arzt',    text: 'Ich gebe Ihnen Hustensaft.' },
+      { speaker: 'patient', text: 'Soll ich ihn vor oder nach dem Essen nehmen?' },
+      { speaker: 'arzt',    text: 'Nach dem Essen. Zweimal täglich.' },
+      { speaker: 'patient', text: 'Danke schön, Herr Doktor.' },
+      { speaker: 'arzt',    text: 'Gute Besserung!' },
+      { speaker: 'patient', text: 'Auf Wiedersehen.' },
+      { speaker: 'arzt',    text: 'Auf Wiedersehen!' },
+    ],
+  },
+];
+
+/* Aktuell gemischte Reihenfolge der Block-IDs */
+let currentOrder   = [];
+let dragSrcIndex   = null;
+let activeIllness  = null; // aktuelles Illness-Objekt
+
+/* ─── Szene 4 initialisieren – mit Krankheits-Animationen ─── */
+function initReorder() {
+  // Zufällige Krankheit wählen
+  activeIllness = ILLNESSES[randInt(0, ILLNESSES.length - 1)];
+  appState.currentIllness = activeIllness.name;
+
+  // Illness-Badge aktualisieren
+  const badgeIcons = { 'Kopfschmerzen':'🤕', 'Bauchschmerzen':'🤢', 'Fieber':'🤒', 'Husten':'😷' };
+  document.getElementById('illness-badge-name').textContent = activeIllness.name;
+  document.getElementById('illness-badge').innerHTML =
+    `${badgeIcons[activeIllness.name] || '🤒'} <span style="font-weight:900;">${activeIllness.name}</span>`;
+
+  // Wörter anzeigen
+  const vocabEl = document.getElementById('vocab-4');
+  if (vocabEl) vocabEl.innerHTML = activeIllness.vocab
+    .map(w => `<span class="vocab-pill">${w}</span>`).join('');
+
+  // ── Patienten-Animation je nach Krankheit ──
+  applyIllnessAnimation(activeIllness.name);
+
+  // Arzt idle
+  setCharState('dr-svg', 'idle');
+
+  // Sprechblasen im Arzt-Zimmer leeren
+  const drBub = document.getElementById('dr-bubble');
+  const ptBub = document.getElementById('pt-bubble');
+  if (drBub) drBub.classList.add('hidden');
+  if (ptBub) ptBub.classList.add('hidden');
+
+  // ── Playback-Overlay zurücksetzen ──
+  // Reorder-UI wieder einblenden (für Neustart)
+  const reorderWrap = document.getElementById('reorder-panel-wrap');
+  const reorderBtns = document.getElementById('reorder-btns');
+  const vocabStrip  = document.querySelector('#scene-4 .vocab-strip');
+  if (reorderWrap) reorderWrap.style.display = '';
+  if (reorderBtns) reorderBtns.style.display = '';
+  if (vocabStrip)  vocabStrip.style.display  = '';
+
+  // Playback overlay ausblenden + bereinigen
+  const overlay = document.getElementById('playback-overlay');
+  if (overlay) overlay.classList.remove('active');
+  const successBanner = document.getElementById('pb-success-banner');
+  if (successBanner) successBanner.classList.remove('active');
+  // Bubbles leeren
+  ['pb-dr-bubble','pb-pt-bubble'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = ''; el.classList.remove('visible'); }
+  });
+  // Sweat verstecken
+  ['pb-sweat1','pb-sweat2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+
+  // IDs erzeugen und mischen
+  currentOrder = activeIllness.dialogue.map((_, i) => i);
+  shuffleArray(currentOrder);
+  renderReorder();
+  hideFeedback('4');
+  document.getElementById('btn-continue-4').classList.add('hidden');
+}
+
+/* ─── Krankheitsspezifische Patient-Animation anwenden ─── */
+function applyIllnessAnimation(illnessName) {
+  const ptSvg   = document.getElementById('pt-svg');
+  const sweat1  = document.getElementById('sweat1');
+  const sweat2  = document.getElementById('sweat2');
+  if (!ptSvg) return;
+
+  // Alle Animations-Klassen entfernen
+  ptSvg.classList.remove('idle','speaking','anim-kopf','anim-bauch','anim-fieber','anim-husten');
+  if (sweat1) sweat1.classList.add('hidden');
+  if (sweat2) sweat2.classList.add('hidden');
+
+  // Mund-Form anpassen (ausdrucksstark)
+  const mouthEl = document.getElementById('pt-mouth');
+
+  switch(illnessName) {
+    case 'Kopfschmerzen':
+      ptSvg.classList.add('anim-kopf');
+      // Schmerzhafter Mund (nach unten)
+      if (mouthEl) mouthEl.setAttribute('d', 'M26 43 Q33 39 40 43');
+      break;
+    case 'Bauchschmerzen':
+      ptSvg.classList.add('anim-bauch');
+      if (mouthEl) mouthEl.setAttribute('d', 'M26 43 Q33 40 40 43');
+      break;
+    case 'Fieber':
+      ptSvg.classList.add('anim-fieber');
+      // Schweiß-Tropfen anzeigen
+      if (sweat1) sweat1.classList.remove('hidden');
+      if (sweat2) sweat2.classList.remove('hidden');
+      if (mouthEl) mouthEl.setAttribute('d', 'M27 42 Q33 39 39 42');
+      break;
+    case 'Husten':
+      ptSvg.classList.add('anim-husten');
+      if (mouthEl) mouthEl.setAttribute('d', 'M26 42 Q33 46 40 42');
+      break;
+    default:
+      ptSvg.classList.add('idle');
+  }
+}
+
+/* ─── Fisher-Yates-Mischen ─── */
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = randInt(0, i);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+/* ─── Reorder neu mischen ─── */
+function reshuffleReorder() {
+  shuffleArray(currentOrder);
+  renderReorder();
+  hideFeedback('4');
+  document.getElementById('btn-continue-4').classList.add('hidden');
+}
+
+/* ─── Reorder-Blöcke rendern ─── */
+function renderReorder() {
+  const container = document.getElementById('reorder-list');
+  container.innerHTML = '';
+
+  currentOrder.forEach((origIdx, displayIdx) => {
+    const line = activeIllness.dialogue[origIdx];
+    const div  = document.createElement('div');
+    div.className = 'reorder-block';
+    div.draggable = true;
+    div.dataset.index = displayIdx;
+
+    const speakerLabel = line.speaker === 'arzt' ? '👨‍⚕️ Arzt' : '🧑 Patient';
+    div.innerHTML = `
+      <span class="drag-handle">⠿</span>
+      <span class="block-num">${displayIdx + 1}</span>
+      <div style="flex:1;">
+        <div class="block-speaker-badge">${speakerLabel}</div>
+        <div style="font-weight:700;font-size:0.93rem;">${line.text}</div>
+      </div>
+    `;
+
+    div.addEventListener('dragstart', onDragStart);
+    div.addEventListener('dragover',  onDragOver);
+    div.addEventListener('drop',      onDrop);
+    div.addEventListener('dragend',   onDragEnd);
+
+    container.appendChild(div);
+  });
+}
+
+/* ─── Drag & Drop Handlers ─── */
+function onDragStart(e) {
+  dragSrcIndex = parseInt(e.currentTarget.dataset.index);
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.reorder-block').forEach(b => b.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+function onDrop(e) {
+  e.preventDefault();
+  const destIndex = parseInt(e.currentTarget.dataset.index);
+  if (dragSrcIndex === null || dragSrcIndex === destIndex) return;
+  // Tausche in currentOrder
+  const temp = currentOrder[dragSrcIndex];
+  currentOrder[dragSrcIndex] = currentOrder[destIndex];
+  currentOrder[destIndex] = temp;
+  renderReorder();
+}
+function onDragEnd() {
+  document.querySelectorAll('.reorder-block').forEach(b => {
+    b.classList.remove('dragging', 'drag-over');
+  });
+  dragSrcIndex = null;
+}
+
+/* ─── Antwort prüfen – PHASE 1 ───────────────────
+   Prüft Reihenfolge. Bei Erfolg: startet Wiedergabe.
+   Bei Fehler: zeigt Fehlermeldung, bleibt interaktiv.
+   ─────────────────────────────────────────────── */
+function checkReorder() {
+  const correct = currentOrder.every((origIdx, i) => origIdx === i);
+
+  // Blöcke farblich markieren (richtig=grün, falsch=rot)
+  const blocks = document.querySelectorAll('.reorder-block');
+  currentOrder.forEach((origIdx, i) => {
+    blocks[i].classList.remove('correct', 'wrong');
+    blocks[i].classList.add(origIdx === i ? 'correct' : 'wrong');
+  });
+
+  if (correct) {
+    appState.dialogCorrect = true;
+    // Kurze Erfolgsrückmeldung, dann Wiedergabe starten
+    showFeedback('4', 'success', '🎉 Perfekt! Die Reihenfolge ist richtig! Das Gespräch beginnt jetzt …');
+    setTimeout(() => {
+      hideFeedback('4');
+      startDialoguePlayback();
+    }, 1400);
+  } else {
+    appState.dialogCorrect = false;
+    showFeedback('4', 'error', '❌ Noch nicht richtig. Schau dir die roten Blöcke an und versuche es noch einmal!');
+  }
+}
+
+/* =============================================
+   DIALOGUE PLAYBACK ENGINE – PHASE 2
+   Runs ONLY after correct reorder submission.
+   
+   Steps:
+   1. Hide the reorder panel + buttons
+   2. Show the playback overlay
+   3. Apply illness animation to playback patient
+   4. Play each dialogue line with:
+      - Speaker spotlight / dim
+      - Animated speech bubble (pop + auto-hide)
+      - Transcript line reveal
+      - Correct delays
+   5. Show success banner + continue button
+   ============================================= */
+
+/* Delay between each dialogue line (ms) */
+const PB_LINE_DELAY    = 2200;   // time each bubble is shown
+const PB_PAUSE_BETWEEN = 400;    // gap between lines
+
+function startDialoguePlayback() {
+  // ── 1. Hide reorder UI ──
+  const reorderWrap = document.getElementById('reorder-panel-wrap');
+  const reorderBtns = document.getElementById('reorder-btns');
+  const vocabStrip  = document.querySelector('#scene-4 .vocab-strip');
+  if (reorderWrap) reorderWrap.style.display = 'none';
+  if (reorderBtns) reorderBtns.style.display = 'none';
+  if (vocabStrip)  vocabStrip.style.display  = 'none';
+
+  // ── 2. Show playback overlay ──
+  const overlay = document.getElementById('playback-overlay');
+  overlay.classList.add('active');
+
+  // ── 3. Apply illness animation to playback patient ──
+  applyPlaybackIllness(activeIllness.name);
+
+  // ── 4. Build progress dots ──
+  const lines = activeIllness.dialogue;
+  const dotsEl = document.getElementById('pb-dots');
+  dotsEl.innerHTML = lines.map((_, i) => `<div class="pb-dot" id="pb-dot-${i}"></div>`).join('');
+
+  // Clear transcript
+  const transcript = document.getElementById('pb-transcript');
+  // Keep the title row, remove any lines from previous runs
+  const existingLines = transcript.querySelectorAll('.pb-line');
+  existingLines.forEach(l => l.remove());
+
+  // ── 5. Play lines sequentially ──
+  playLine(0, lines);
+}
+
+/* ─── Play one dialogue line, then recurse ─── */
+function playLine(index, lines) {
+  if (index >= lines.length) {
+    // All lines done → show success banner
+    endPlayback();
+    return;
+  }
+
+  const line    = lines[index];
+  const isDoctor = line.speaker === 'arzt';
+
+  // Update progress dot
+  const prevDot = document.getElementById(`pb-dot-${index - 1}`);
+  if (prevDot) prevDot.classList.replace('active', 'done');
+  const curDot = document.getElementById(`pb-dot-${index}`);
+  if (curDot) curDot.classList.add('active');
+
+  // Update cinematic top bar
+  const labelEl = document.getElementById('pb-speaker-label');
+  labelEl.textContent = isDoctor ? '👨‍⚕️ Arzt spricht …' : '🧑 Patient spricht …';
+
+  // ── Spotlight / dim characters ──
+  const drWrap = document.getElementById('pb-dr-wrap');
+  const ptWrap = document.getElementById('pb-pt-wrap');
+  drWrap.classList.remove('pb-speaking', 'pb-speaking-doctor', 'pb-dimmed');
+  ptWrap.classList.remove('pb-speaking', 'pb-dimmed');
+
+  if (isDoctor) {
+    drWrap.classList.add('pb-speaking-doctor');
+    ptWrap.classList.add('pb-dimmed');
+    setPlaybackCharState('pb-dr-svg', 'speaking');
+    setPlaybackCharState('pb-pt-svg', getIllnessClass(activeIllness.name));
+  } else {
+    ptWrap.classList.add('pb-speaking');
+    drWrap.classList.add('pb-dimmed');
+    setPlaybackCharState('pb-pt-svg', 'speaking');
+    setPlaybackCharState('pb-dr-svg', 'idle');
+  }
+
+  // ── Show speech bubble ──
+  const drBub = document.getElementById('pb-dr-bubble');
+  const ptBub = document.getElementById('pb-pt-bubble');
+
+  // Hide both first
+  drBub.classList.remove('visible');
+  ptBub.classList.remove('visible');
+  drBub.textContent = '';
+  ptBub.textContent = '';
+
+  const activeBub = isDoctor ? drBub : ptBub;
+  activeBub.textContent = line.text;
+  // Trigger animation restart
+  activeBub.style.animation = 'none';
+  activeBub.offsetHeight;
+  activeBub.style.animation = '';
+  activeBub.classList.add('visible');
+
+  // ── Add transcript line ──
+  addTranscriptLine(line, index);
+
+  // ── Scroll transcript to bottom ──
+  const transcript = document.getElementById('pb-transcript');
+  setTimeout(() => { transcript.scrollTop = transcript.scrollHeight; }, 100);
+
+  // ── Schedule next line ──
+  setTimeout(() => {
+    // Fade out bubble before next line
+    activeBub.classList.remove('visible');
+    setPlaybackCharState(isDoctor ? 'pb-dr-svg' : 'pb-pt-svg', 'idle');
+    setTimeout(() => playLine(index + 1, lines), PB_PAUSE_BETWEEN);
+  }, PB_LINE_DELAY);
+}
+
+/* ─── Add a line to the transcript ─── */
+function addTranscriptLine(line, index) {
+  const transcript = document.getElementById('pb-transcript');
+  const div = document.createElement('div');
+  const isDoctor = line.speaker === 'arzt';
+  div.className = `pb-line ${isDoctor ? 'pb-line-arzt' : 'pb-line-patient'}`;
+  div.innerHTML = `
+    <span class="pb-line-speaker">${isDoctor ? 'Arzt' : 'Patient'}</span>
+    <span class="pb-line-text">${line.text}</span>
+  `;
+  transcript.appendChild(div);
+  // Trigger reveal animation with small stagger
+  setTimeout(() => div.classList.add('revealed'), 60);
+}
+
+/* ─── End of playback: show success banner + continue ─── */
+function endPlayback() {
+  // Mark last dot done
+  const lines = activeIllness.dialogue;
+  const lastDot = document.getElementById(`pb-dot-${lines.length - 1}`);
+  if (lastDot) lastDot.classList.replace('active', 'done');
+
+  // Update top bar
+  const labelEl = document.getElementById('pb-speaker-label');
+  labelEl.textContent = '✅ Gespräch beendet';
+
+  // Both characters idle & full opacity
+  const drWrap = document.getElementById('pb-dr-wrap');
+  const ptWrap = document.getElementById('pb-pt-wrap');
+  drWrap.classList.remove('pb-speaking', 'pb-speaking-doctor', 'pb-dimmed');
+  ptWrap.classList.remove('pb-speaking', 'pb-dimmed');
+  setPlaybackCharState('pb-dr-svg', 'idle');
+  setPlaybackCharState('pb-pt-svg', 'idle');
+
+  // Show success banner
+  setTimeout(() => {
+    document.getElementById('pb-success-banner').classList.add('active');
+    setTimeout(() => document.getElementById('btn-continue-4').classList.remove('hidden'), 600);
+  }, 500);
+}
+
+/* ─── Helper: set playback SVG animation state ─── */
+function setPlaybackCharState(svgId, state) {
+  const el = document.getElementById(svgId);
+  if (!el) return;
+  // Remove all state classes
+  el.classList.remove('idle', 'speaking', 'anim-kopf', 'anim-bauch', 'anim-fieber', 'anim-husten');
+  el.classList.add(state);
+}
+
+/* ─── Apply illness animation to playback patient ─── */
+function applyPlaybackIllness(illnessName) {
+  const ptSvg  = document.getElementById('pb-pt-svg');
+  const sweat1 = document.getElementById('pb-sweat1');
+  const sweat2 = document.getElementById('pb-sweat2');
+  const mouth  = document.getElementById('pb-pt-mouth');
+  if (!ptSvg) return;
+
+  ptSvg.classList.remove('idle','speaking','anim-kopf','anim-bauch','anim-fieber','anim-husten');
+  if (sweat1) sweat1.classList.add('hidden');
+  if (sweat2) sweat2.classList.add('hidden');
+
+  switch(illnessName) {
+    case 'Kopfschmerzen':
+      ptSvg.classList.add('anim-kopf');
+      if (mouth) mouth.setAttribute('d', 'M26 43 Q33 39 40 43');
+      break;
+    case 'Bauchschmerzen':
+      ptSvg.classList.add('anim-bauch');
+      if (mouth) mouth.setAttribute('d', 'M26 43 Q33 40 40 43');
+      break;
+    case 'Fieber':
+      ptSvg.classList.add('anim-fieber');
+      if (sweat1) sweat1.classList.remove('hidden');
+      if (sweat2) sweat2.classList.remove('hidden');
+      if (mouth) mouth.setAttribute('d', 'M27 42 Q33 39 39 42');
+      break;
+    case 'Husten':
+      ptSvg.classList.add('anim-husten');
+      if (mouth) mouth.setAttribute('d', 'M26 42 Q33 46 40 42');
+      break;
+    default:
+      ptSvg.classList.add('idle');
+  }
+}
+
+/* ─── Return CSS animation class for illness (used while other char speaks) ─── */
+function getIllnessClass(illnessName) {
+  const map = {
+    'Kopfschmerzen': 'anim-kopf',
+    'Bauchschmerzen': 'anim-bauch',
+    'Fieber': 'anim-fieber',
+    'Husten': 'anim-husten',
+  };
+  return map[illnessName] || 'idle';
+}
+
+/* =============================================
+   ABSCHLUSSBILDSCHIRM aufbauen
+   ============================================= */
+function buildFinalScreen() {
+  const t1 = appState.scene1Time !== null ? `${appState.scene1Time}s` : '—';
+  const t3 = appState.scene3Time !== null ? `${appState.scene3Time}s` : '—';
+  const d4 = appState.dialogCorrect ? '✅ Richtig' : '❌ Falsch';
+
+  document.getElementById('res-time1').textContent = t1;
+  document.getElementById('res-time3').textContent = t3;
+  document.getElementById('res-dialog').textContent = d4;
+
+  // Gesamt-Feedback berechnen
+  const totalTime = (appState.scene1Time || 0) + (appState.scene3Time || 0);
+  let title, subtitle, trophy;
+
+  if (appState.dialogCorrect && totalTime <= 30) {
+    title    = 'Ausgezeichnet! 🌟';
+    subtitle = 'Du hast alles richtig gemacht und sehr schnell gespielt!';
+    trophy   = '🏆';
+  } else if (appState.dialogCorrect) {
+    title    = 'Gut gemacht! 👍';
+    subtitle = `Du hast den Dialog richtig geordnet! Gesamtzeit: ${totalTime} Sekunden.`;
+    trophy   = '🥇';
+  } else {
+    title    = 'Weiter üben!';
+    subtitle = 'Der Dialog war nicht ganz richtig. Versuche es noch einmal!';
+    trophy   = '💪';
+  }
+
+  document.getElementById('final-title').textContent    = title;
+  document.getElementById('final-subtitle').textContent = subtitle;
+  document.getElementById('final-trophy').textContent   = trophy;
+}
+
+/* =============================================
+   APP START – Titelbildschirm ist per CSS aktiv
+   ============================================= */
+</script>
+</body>
+</html>
